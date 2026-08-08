@@ -67,11 +67,8 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
-      - name: Verify Android project
-        run: |
-          test -f android/capacitor.settings.gradle
-          test -f android/capacitor.build.gradle
-          echo "Android Capacitor project OK"
+      - name: Sync Capacitor
+        run: npx cap sync android
 
       - name: Build APK
         working-directory: android
