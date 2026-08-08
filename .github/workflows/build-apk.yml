@@ -14,22 +14,41 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-        
+          node-version: 22
 
-      - name: Install dependencies
-        run: npm install
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
 
       - name: Install Capacitor
         run: |
-          npm install @capacitor/cli@7.4.3
-          npm install @capacitor/core@7.4.3
-          npm install @capacitor/android@7.4.3
-          npm install @capacitor/local-notifications@7.0.3
-          
+          npm install
+          npm install @capacitor/cli@7.4.3 @capacitor/core@7.4.3 @capacitor/android@7.4.3 @capacitor/local-notifications@7.0.3
+
+      - name: Prepare web assets
+        run: |
+          rm -rf www
+          mkdir -p www
+
+          cp index.html www/index.html
+          cp manifest.json www/manifest.json
+          cp sw.js www/sw.js
+          cp native-notifications.js www/native-notifications.js
+
+          if [ -d icons ]; then
+            cp -r icons www/icons
+          fi
+
+          echo "=== WWW CONTENT ==="
+          find www -maxdepth 2 -type f -print
+
+          test -f www/index.html
+
       - name: Create Capacitor config
         run: |
           cat > capacitor.config.json <<'EOF'
@@ -40,17 +59,19 @@ jobs:
           }
           EOF
 
-      - name: Add Android platform
+          cat capacitor.config.json
+
+      - name: Add Android
         run: npx cap add android
 
       - name: Sync Capacitor
         run: npx cap sync android
 
-      - name: Verify Capacitor Android files
+      - name: Verify Android project
         run: |
           test -f android/capacitor.settings.gradle
           test -f android/capacitor.build.gradle
-          echo "Capacitor Android files OK"
+          echo "Android Capacitor project OK"
 
       - name: Build APK
         working-directory: android
@@ -61,5 +82,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: agenda-kerja-apk
+          name: Agenda-Kerja-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
