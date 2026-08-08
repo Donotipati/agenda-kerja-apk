@@ -24,8 +24,12 @@ jobs:
         run: npm install
 
       - name: Install Capacitor
-        run: npm install @capacitor/cli @capacitor/core @capacitor/android @capacitor/local-notifications
-
+        run: |
+          npm install @capacitor/cli@7.4.3
+          npm install @capacitor/core@7.4.3
+          npm install @capacitor/android@7.4.3
+          npm install @capacitor/local-notifications@7.0.3
+          
       - name: Create Capacitor config
         run: |
           cat > capacitor.config.json <<'EOF'
@@ -39,17 +43,20 @@ jobs:
       - name: Add Android platform
         run: npx cap add android
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Verify Capacitor Android files
+        run: |
+          test -f android/capacitor.settings.gradle
+          test -f android/capacitor.build.gradle
+          echo "Capacitor Android files OK"
 
       - name: Build APK
+        working-directory: android
         run: |
-          cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
