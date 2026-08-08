@@ -28,16 +28,12 @@ jobs:
 
       - name: Create Capacitor config
         run: |
-          cat > capacitor.config.ts <<'EOF'
-          import type { CapacitorConfig } from '@capacitor/cli';
-
-          const config: CapacitorConfig = {
-            appId: 'id.agendakerja.app',
-            appName: 'Agenda Kerja',
-            webDir: 'www'
-          };
-
-          export default config;
+          cat > capacitor.config.json <<'EOF'
+          {
+            "appId": "id.agendakerja.app",
+            "appName": "Agenda Kerja",
+            "webDir": "www"
+          }
           EOF
 
       - name: Add Android platform
