@@ -23,14 +23,25 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Install Capacitor CLI
-        run: npm install @capacitor/cli @capacitor/core @capacitor/android
+      - name: Install Capacitor
+        run: npm install @capacitor/cli @capacitor/core @capacitor/android @capacitor/local-notifications
+
+      - name: Create Capacitor config
+        run: |
+          cat > capacitor.config.ts <<'EOF'
+          import type { CapacitorConfig } from '@capacitor/cli';
+
+          const config: CapacitorConfig = {
+            appId: 'id.agendakerja.app',
+            appName: 'Agenda Kerja',
+            webDir: 'www'
+          };
+
+          export default config;
+          EOF
 
       - name: Add Android platform
         run: npx cap add android
-
-      - name: Sync Capacitor
-        run: npx cap sync android
 
       - name: Setup Java
         uses: actions/setup-java@v4
