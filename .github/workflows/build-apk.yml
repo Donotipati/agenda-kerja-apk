@@ -28,7 +28,7 @@ jobs:
       - name: Install Capacitor
         run: |
           npm install
-          npm install @capacitor/cli@7.4.3 @capacitor/core@7.4.3 @capacitor/android@7.4.3 @capacitor/local-notifications@7.0.3
+          npm install @capacitor/cli@7.4.3 @capacitor/core@7.4.3 @capacitor/android@7.4.3 @capacitor/local-notifications@7.0.3 @capacitor/filesystem@7.1.1 @capacitor/share@7.0.1
 
       - name: Prepare web assets
         run: |
@@ -39,6 +39,7 @@ jobs:
           cp manifest.json www/manifest.json
           cp sw.js www/sw.js
           cp native-notifications.js www/native-notifications.js
+          cp native-files.js www/native-files.js
 
           if [ -d icons ]; then
             cp -r icons www/icons
