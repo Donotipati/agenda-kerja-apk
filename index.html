@@ -630,7 +630,10 @@ var state = {
     window.AgendaNotifications.reschedule(nid,title,body,dt).catch(function(){});
   }
   function requestAgendaNotificationPermission(){
-    if(window.AgendaNotifications) window.AgendaNotifications.ensurePermission().catch(function(){});
+    if(!window.AgendaNotifications) return;
+    window.AgendaNotifications.ensurePermission().then(function(){
+      return window.AgendaNotifications.ensureExactAlarmPermission(true);
+    }).catch(function(){});
   }
   function scheduleAllFutureAgendaNotifications(){
     if(!window.AgendaNotifications) return;
