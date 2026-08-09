@@ -64,6 +64,12 @@ jobs:
       - name: Add Android
         run: npx cap add android
 
+      - name: Install Capacitor Assets tool
+        run: npm install @capacitor/assets@3.0.5 --save-dev
+
+      - name: Generate app icons
+        run: npx capacitor-assets generate --android
+
       - name: Sync Capacitor
         run: npx cap sync android
 
