@@ -1822,7 +1822,7 @@ function composeNarrativeLaporan(){
   var hijriLabel = hijriMonthLabelForGregorian(state.viewDate);
   var namaInstansi = (state.settings.namaInstansi||"").trim();
 
-  var html = (namaInstansi ? "<table cellpadding=\"6\" cellspacing=\"0\" style=\"margin-bottom:14px;\"><tr><td style=\"border:1.5px solid #333;font-weight:bold;font-size:13px;letter-spacing:0.5px;\">"+escapeHtml(namaInstansi.toUpperCase())+"</td></tr></table>" : "");
+  var html = (namaInstansi ? "<table cellpadding=\"10\" cellspacing=\"0\" style=\"margin-bottom:14px;\"><tr><td style=\"border:1.5px solid #333;background:#e9e9e9;font-weight:bold;font-size:16pt;letter-spacing:0.5px;text-align:center;\">"+escapeHtml(namaInstansi.toUpperCase())+"</td></tr></table>" : "");
   html += "<h1>Laporan Rencana Kerja &mdash; "+escapeHtml(bulanTahun)+"</h1>";
   html += "<p style='margin-top:-8px;color:#555;'>Bertepatan dengan "+escapeHtml(hijriLabel)+"</p>";
   html += "<p>Pada bulan "+escapeHtml(bulanTahun)+", tercatat sebanyak "+monthKeg.length+" kegiatan dalam Rencana Kerja (RENJA). Dari jumlah tersebut, "+statusCounts.sesuai+" kegiatan terlaksana sesuai jadwal, "+statusCounts.berubah+" kegiatan mengalami perubahan jadwal, "+statusCounts.batal+" kegiatan tidak terlaksana, dan "+statusCounts.belum+" kegiatan belum memiliki catatan evaluasi.</p>";
@@ -1852,15 +1852,11 @@ function composeNarrativeLaporan(){
         var ev = k.evaluasi;
         var statusText = ev.statusPelaksanaan==="sesuai" ? "Terlaksana sesuai jadwal" : (ev.statusPelaksanaan==="berubah" ? "Terlaksana dengan perubahan jadwal" : "Tidak terlaksana");
         uraian += "<p>"+statusText+", dihadiri oleh "+(ev.pesertaHadir||0)+" peserta"+(k.targetPeserta?" dari target "+k.targetPeserta+" peserta":"")+".</p>";
-        uraian += "<p>Capaian target kegiatan: "+escapeHtml(ev.capaianTarget||"-")+".</p>";
-        if(ev.indikatorKeberhasilan) uraian += "<p>Indikator keberhasilan: "+escapeHtml(ev.indikatorKeberhasilan)+"</p>";
-        if(ev.kendala) uraian += "<p>Kendala yang dihadapi: "+escapeHtml(ev.kendala)+"</p>";
+        uraian += "<p><b>Capaian target kegiatan :</b></p><p>"+escapeHtml(ev.capaianTarget||"-")+".</p>";
+        if(ev.indikatorKeberhasilan) uraian += "<p><b>Indikator keberhasilan :</b></p><p>"+escapeHtml(ev.indikatorKeberhasilan)+"</p>";
+        if(ev.kendala) uraian += "<p><b>Kendala yang dihadapi :</b></p><p>"+escapeHtml(ev.kendala)+"</p>";
         if(ev.uraianEvaluasi) uraian += "<p>"+escapeHtml(ev.uraianEvaluasi)+"</p>";
-        var realisasiKeg = ev.realisasiAnggaran||0;
-        var ajuanEfektifKeg = (k.totalAnggaranAjuan||0)+(ev.danaTambahan||0);
-        var rk = hitungDeviasi(ajuanEfektifKeg, realisasiKeg);
-        uraian += "<p>Realisasi anggaran: "+fmtRupiah(realisasiKeg)+" dari ajuan "+fmtRupiah(ajuanEfektifKeg)+" ("+(rk.selisih===0?"sesuai ajuan":"deviasi "+fmtRupiah(Math.abs(rk.selisih))+", "+(rk.selisih<0?"di bawah ajuan":"melebihi ajuan"))+").</p>";
-        if(ev.rencanaTindakLanjut) uraian += "<p>Rencana tindak lanjut: "+escapeHtml(ev.rencanaTindakLanjut)+"</p>";
+        if(ev.rencanaTindakLanjut) uraian += "<p><b>Rencana tindak lanjut :</b></p><p>"+escapeHtml(ev.rencanaTindakLanjut)+"</p>";
       } else {
         uraian += "<p><em>Kegiatan ini belum memiliki catatan evaluasi.</em></p>";
       }
