@@ -129,7 +129,7 @@
   .sheet-backdrop.open{display:flex;}
   #pickerSheetBackdrop{z-index:55;}
   #confirmBackdrop{z-index:60;}
-  .sheet{background:var(--paper);width:100%;max-width:480px;border-radius:20px 20px 0 0;padding:16px 20px 26px;max-height:90vh;overflow-y:auto;animation:slideup .2s ease-out;}
+  .sheet{background:var(--paper);width:100%;max-width:480px;border-radius:20px 20px 0 0;padding:16px 20px calc(26px + env(safe-area-inset-bottom,0px));max-height:90vh;overflow-y:auto;animation:slideup .2s ease-out;}
   @keyframes slideup{from{transform:translateY(24px);opacity:0;}to{transform:translateY(0);opacity:1;}}
   .sheet-handle{width:36px;height:4px;background:var(--paper-line);border-radius:3px;margin:0 auto 14px;}
   .sheet h2{font-size:17px;margin:0 0 4px;}
@@ -170,6 +170,13 @@
   .toggle3 button.active.tercapai{background:var(--success-bg);color:var(--success);}
   .toggle3 button.active.sebagian{background:var(--warn-bg);color:var(--warn);}
   .toggle3 button.active.tidak{background:var(--danger-bg);color:var(--danger);}
+  .lock-overlay{position:fixed;inset:0;background:var(--cover-dark);z-index:999;display:none;align-items:center;justify-content:center;padding:24px;padding-top:calc(24px + env(safe-area-inset-top,0px));padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));}
+  .lock-box{width:100%;max-width:320px;text-align:center;color:var(--paper);}
+  .lock-icon{font-size:40px;margin-bottom:6px;}
+  .lock-box h2{margin:0 0 4px;}
+  .lock-pin-input{width:100%;text-align:center;font-size:26px;letter-spacing:14px;padding:14px 10px 14px 20px;border-radius:12px;border:none;margin-top:18px;font-family:inherit;}
+  .lock-error{color:#ff9b9b;min-height:18px;margin-top:10px;font-size:13px;}
+  .lock-forgot{background:none;border:none;color:var(--accent-light);text-decoration:underline;font-size:13px;margin-top:18px;cursor:pointer;font-family:inherit;}
 
   .pelaksana-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
   .pelaksana-row .name{flex:1;font-size:13.5px;font-weight:600;}
@@ -218,6 +225,8 @@
   .cal-cell.today{border-color:var(--accent);background:var(--accent-bg);}
   .cal-cell.selected{border-color:var(--accent);border-width:2px;}
   .cal-cell .cn{font-size:13px;font-weight:600;color:var(--ink);}
+  .cal-cell .ch{font-size:9px;color:var(--muted);margin-top:1px;}
+  .cal-cell.muted .ch{color:var(--paper-line);}
   .cal-cell .cd{width:5px;height:5px;border-radius:50%;background:var(--accent);margin-top:2px;}
   .setting-row input{width:110px;padding:7px 9px;border:1px solid var(--paper-line);border-radius:8px;font-size:13px;text-align:right;}
 
@@ -343,7 +352,35 @@
 
     <!-- ============ TAB: ATUR ============ -->
     <div class="tab-panel" id="tab-atur">
-      <div class="section-title first">Kategori Pelaksana &amp; Operasional</div>
+      <div class="section-title first">Instansi</div>
+      <div class="setting-group">
+        <div class="setting-row">
+          <div><div class="lbl">Nama Instansi</div><div class="desc">Muncul sebagai kop di laporan Word yang dicetak</div></div>
+          <input type="text" id="setNamaInstansi" placeholder="Contoh: Kecamatan ...">
+        </div>
+      </div>
+
+      <div class="section-title">Kalender Hijriah</div>
+      <div class="setting-group">
+        <div class="setting-row">
+          <div><div class="lbl">Koreksi Tanggal Hijriah</div><div class="desc">Dalam hari, boleh minus. Isi kalau tanggal Hijriah beda dari kalender resmi/instansi (mis. -1 atau +1)</div></div>
+          <input type="text" inputmode="numeric" id="setHijriOffset" style="max-width:70px;">
+        </div>
+      </div>
+      <button class="btn-primary btn" id="btnSaveInstansiHijri" style="width:100%;margin-bottom:20px;">Simpan</button>
+
+      <div class="section-title">Keamanan</div>
+      <div style="margin-bottom:10px;">
+        <div class="lbl">Kunci Aplikasi (PIN 6 Digit)</div>
+        <div class="desc" style="margin-bottom:8px;">Minta PIN setiap kali app dibuka. Kalau lupa PIN, bisa buka pakai kunci layar HP.</div>
+        <div class="toggle3" id="toggleKunciAplikasi">
+          <button type="button" data-val="ya">Ya</button>
+          <button type="button" data-val="tidak" class="active">Tidak</button>
+        </div>
+      </div>
+      <button class="btn-small" id="btnUbahPin" style="width:100%;margin-bottom:20px;display:none;">Ubah PIN</button>
+
+      <div class="section-title">Kategori Pelaksana &amp; Operasional</div>
       <div id="kategoriListArea"></div>
       <button class="btn-small" id="btnTambahKategori" style="width:100%;margin-bottom:16px;">+ Tambah Kategori</button>
 
@@ -370,6 +407,17 @@
 </div>
 
 <div class="fab"><button id="btnFab">＋</button></div>
+
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-box">
+    <div class="lock-icon">🔒</div>
+    <h2 id="lockTitle">Masukkan PIN</h2>
+    <p class="empty-note" id="lockSubtitle" style="color:var(--accent-light);"></p>
+    <input type="password" inputmode="numeric" maxlength="6" id="lockPinInput" class="lock-pin-input" autocomplete="off">
+    <p class="lock-error" id="lockError"></p>
+    <button type="button" class="lock-forgot" id="btnLockForgot">Lupa PIN? Gunakan kunci layar HP</button>
+  </div>
+</div>
 
 <div class="bottom-nav">
   <button class="nav-btn active" data-tab="beranda"><span class="ic">⌂</span>Beranda</button>
@@ -595,7 +643,11 @@ var DEFAULT_SETTINGS = {
     {id:"inko", nama:"INKO", tarif:0}
   ],
   tarifMaminPendek: 0,
-  tarifMaminPanjang: 0
+  tarifMaminPanjang: 0,
+  namaInstansi: "",
+  hijriOffset: 0,
+  pinEnabled: false,
+  pinHash: ""
 };
 
 var state = {
@@ -729,12 +781,17 @@ function jdToHijri(jd){
   return {year: year, month: month, day: day};
 }
 function dateToHijri(d){
-  var jd = gregorianToJDN(d.getFullYear(), d.getMonth()+1, d.getDate());
+  var offset = (state.settings && state.settings.hijriOffset) || 0;
+  var jd = gregorianToJDN(d.getFullYear(), d.getMonth()+1, d.getDate()) + offset;
   return jdToHijri(jd);
 }
 function hijriMonthLabelForGregorian(d){
   var h = dateToHijri(new Date(d.getFullYear(), d.getMonth(), 15));
   return HIJRI_MONTHS[h.month-1] + " " + h.year + " H";
+}
+function hijriDateLabel(d){
+  var h = dateToHijri(d);
+  return h.day + " " + HIJRI_MONTHS[h.month-1] + " " + h.year + " H";
 }
 
 // ---------- computation helpers ----------
@@ -860,9 +917,10 @@ function renderCalendarGrid(){
     else { cellD=dayNum; }
     var dateStr = cellY+"-"+(cellM+1).toString().padStart(2,"0")+"-"+cellD.toString().padStart(2,"0");
     var hasKeg = state.kegiatan.some(function(k){ return k.tanggal===dateStr; });
+    var hijriDay = dateToHijri(new Date(cellY, cellM, cellD)).day;
     var cell = document.createElement("div");
     cell.className = "cal-cell" + (inCurrentMonth?"":" muted") + (dateStr===todayStr?" today":"") + (dateStr===selectedStr?" selected":"");
-    cell.innerHTML = '<span class="cn">'+cellD+'</span>' + (hasKeg ? '<span class="cd"></span>' : '');
+    cell.innerHTML = '<span class="cn">'+cellD+'</span><span class="ch">'+hijriDay+'H</span>' + (hasKeg ? '<span class="cd"></span>' : '');
     cell.addEventListener("click", (function(ds){ return function(){ state.selectedCalDate = ds; renderCalendarGrid(); renderJadwalSection(); }; })(dateStr));
     el.appendChild(cell);
   }
@@ -1145,6 +1203,15 @@ document.getElementById("btnTambahKategori").addEventListener("click", function(
   state.settings.kategoriPelaksana.push({id:uid(), nama:"Kategori Baru", tarif:0});
   save(); renderKategoriList();
 });
+document.getElementById("btnSaveInstansiHijri").addEventListener("click", function(){
+  state.settings.namaInstansi = document.getElementById("setNamaInstansi").value.trim();
+  var offRaw = parseInt(document.getElementById("setHijriOffset").value, 10);
+  state.settings.hijriOffset = isNaN(offRaw) ? 0 : offRaw;
+  save();
+  renderCalendarGrid();
+  document.getElementById("monthLabelHijri").textContent = hijriMonthLabelForGregorian(state.viewDate);
+  toast("Instansi & kalender Hijriah disimpan");
+});
 document.getElementById("btnSaveTarifMamin").addEventListener("click", function(){
   state.settings.tarifMaminPendek = getRawNumber(document.getElementById("setTarifMaminPendek"));
   state.settings.tarifMaminPanjang = getRawNumber(document.getElementById("setTarifMaminPanjang"));
@@ -1178,6 +1245,9 @@ function renderAll(){
     renderKategoriList();
     setNumberInputValue(document.getElementById("setTarifMaminPendek"), state.settings.tarifMaminPendek);
     setNumberInputValue(document.getElementById("setTarifMaminPanjang"), state.settings.tarifMaminPanjang);
+    document.getElementById("setNamaInstansi").value = state.settings.namaInstansi || "";
+    document.getElementById("setHijriOffset").value = state.settings.hijriOffset || 0;
+    renderAturLockToggle();
   }
 }
 
@@ -1628,77 +1698,107 @@ function openMonthPickerForJadikanKegiatan(){
   });
 }
 
-// ================= CETAK RENJA (EXCEL/CSV) =================
-function csvEscape(val){
-  var s = String(val==null?"":val);
-  if(/[",;\n]/.test(s)){ s = '"'+s.replace(/"/g,'""')+'"'; }
-  return s;
+// ================= CETAK RENJA (EXCEL / .xls dengan header gabung) =================
+function xlsEscape(val){
+  return String(val==null?"":val).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
-function generateRenjaCSV(){
+function generateRenjaXlsHtml(){
   var monthKeg = state.kegiatan.filter(function(k){ return inViewMonth(k.tanggal, state.viewDate); })
     .sort(function(a,b){ return a.tanggal.localeCompare(b.tanggal); });
   var kategoriList = activeKategoriPelaksana();
 
-  var groupRow = [], subRow = [];
-  function addCol(groupLabel, subLabel){ groupRow.push(groupLabel); subRow.push(subLabel); }
+  // Definisikan kolom: { group: label grup (kosong = tidak digrup), label: nama kolom }
+  var cols = [];
+  function col(group, label){ cols.push({group:group, label:label}); }
+  col("", "No");
+  col("Tanggal","Hari"); col("Tanggal","Tgl"); col("Tanggal","Bln");
+  col("", "Jam"); col("", "Tempat"); col("", "Jenis Kegiatan"); col("", "Target Kegiatan");
+  col("", "Sasaran"); col("", "Volume Kegiatan"); col("", "Target Peserta"); col("", "Durasi"); col("", "Nama Rangkaian");
+  kategoriList.forEach(function(cat){ col("Pelaksana & Operasional", cat.nama); });
+  col("Pelaksana & Operasional", "TTL");
+  col("Pelaksana & Operasional", "Biaya Personel");
+  col("Pelaksana & Operasional", "Mamin");
+  col("Kendaraan","Supir"); col("Kendaraan","Bensin"); col("Kendaraan","E-Toll"); col("Kendaraan","Jml Mobil"); col("Kendaraan","Jml Motor");
+  col("", "Total Anggaran (Ajuan)"); col("", "Sumber Kegiatan"); col("", "Reguler");
+  col("Evaluasi","Status Pelaksanaan"); col("Evaluasi","Peserta Hadir"); col("Evaluasi","Capaian Target");
+  col("Evaluasi","Dana Tambahan"); col("Evaluasi","Realisasi Anggaran"); col("Evaluasi","Deviasi"); col("Evaluasi","Rencana Tindak Lanjut");
 
-  addCol("", "NO");
-  addCol("TANGGAL","HARI"); addCol("","TGL"); addCol("","BLN");
-  addCol("","JAM"); addCol("","TEMPAT"); addCol("","JENIS KEGIATAN"); addCol("","TARGET KEGIATAN");
-  addCol("","SASARAN"); addCol("","VOLUME KEGIATAN"); addCol("","TARGET PESERTA"); addCol("","DURASI"); addCol("","NAMA RANGKAIAN");
-  kategoriList.forEach(function(cat, i){ addCol(i===0 ? "PELAKSANA & OPERASIONAL" : "", cat.nama.toUpperCase()); });
-  addCol(kategoriList.length===0 ? "PELAKSANA & OPERASIONAL" : "", "TTL");
-  addCol("", "BIAYA PERSONEL");
-  addCol("", "MAMIN");
-  addCol("KENDARAAN","SUPIR"); addCol("","BENSIN"); addCol("","E-TOLL"); addCol("","JML MOBIL"); addCol("","JML MOTOR");
-  addCol("","TOTAL ANGGARAN (AJUAN)"); addCol("","SUMBER KEGIATAN"); addCol("","REGULER");
-  addCol("EVALUASI","STATUS PELAKSANAAN"); addCol("","PESERTA HADIR"); addCol("","CAPAIAN TARGET");
-  addCol("","DANA TAMBAHAN"); addCol("","REALISASI ANGGARAN"); addCol("","DEVIASI"); addCol("","RENCANA TINDAK LANJUT");
+  var thStyle = 'style="border:1px solid #999;background:#dbe7f3;font-weight:bold;text-align:center;padding:5px;font-family:Calibri,Arial;font-size:11px;"';
+  var tdStyle = 'style="border:1px solid #ccc;padding:4px 6px;font-family:Calibri,Arial;font-size:11px;vertical-align:top;"';
+  var tdStyleNum = 'style="border:1px solid #ccc;padding:4px 6px;font-family:Calibri,Arial;font-size:11px;vertical-align:top;text-align:right;"';
 
-  var rows = [groupRow, subRow];
+  // Baris header 1 (grup, pakai colspan) + baris header 2 (label kolom, cuma buat yg ada grup-nya)
+  var headerRow1 = "", headerRow2 = "";
+  var i = 0;
+  while(i < cols.length){
+    var g = cols[i].group;
+    if(g === ""){
+      headerRow1 += '<td '+thStyle+' rowspan="2">'+xlsEscape(cols[i].label)+'</td>';
+      i++;
+    } else {
+      var span = 0;
+      while(i+span < cols.length && cols[i+span].group === g){ span++; }
+      headerRow1 += '<td '+thStyle+' colspan="'+span+'">'+xlsEscape(g)+'</td>';
+      for(var j=0;j<span;j++){ headerRow2 += '<td '+thStyle+'>'+xlsEscape(cols[i+j].label)+'</td>'; }
+      i += span;
+    }
+  }
 
+  var bodyRows = "";
   monthKeg.forEach(function(k, idx){
     var d = new Date(k.tanggal+"T00:00:00");
-    var row = [
+    var vals = [
       idx+1, DOW[d.getDay()], d.getDate(), MONTHS[d.getMonth()],
       k.jam||"", k.tempat||"", k.jenisKegiatan||"", k.targetKegiatan||"",
       k.sasaran||"", k.volumeKegiatan||"", k.targetPeserta||0, (k.durasi==="panjang"?">4 Jam":"≤4 Jam"), k.namaRangkaian||""
     ];
     kategoriList.forEach(function(cat){
       var p = (k.pelaksanaBreakdown||[]).find(function(x){ return x.catId===cat.id; });
-      row.push(p ? p.jumlah : 0);
+      vals.push(p ? p.jumlah : 0);
     });
-    row.push(k.ttl||0, k.biayaPersonel||0, k.mamin||0);
+    vals.push(k.ttl||0, k.biayaPersonel||0, k.mamin||0);
     var kendaraan = k.kendaraan||{};
-    row.push(kendaraan.supir||"", kendaraan.bensin||0, kendaraan.etoll||0, kendaraan.jmlMobil||0, kendaraan.jmlMotor||0);
-    row.push(k.totalAnggaranAjuan||0, sumberBadge(k).label, (k.isReguler?"Ya":"Tidak"));
+    vals.push(kendaraan.supir||"-", kendaraan.bensin||0, kendaraan.etoll||0, kendaraan.jmlMobil||0, kendaraan.jmlMotor||0);
+    vals.push(k.totalAnggaranAjuan||0, sumberBadge(k).label, (k.isReguler?"Ya":"Tidak"));
     if(k.evaluasi){
       var ev = k.evaluasi;
       var ajuanEfektifKeg = (k.totalAnggaranAjuan||0)+(ev.danaTambahan||0);
       var rk = hitungDeviasi(ajuanEfektifKeg, ev.realisasiAnggaran||0);
-      row.push(
-        kegiatanStatusBadge(k).label, ev.pesertaHadir||0, ev.capaianTarget||"",
+      vals.push(kegiatanStatusBadge(k).label, ev.pesertaHadir||0, ev.capaianTarget||"-",
         ev.danaTambahan||0, ev.realisasiAnggaran||0,
         (rk.selisih===0?"Sesuai Ajuan":(rk.selisih>0?"+":"-")+Math.abs(rk.selisih)),
-        ev.rencanaTindakLanjut||""
-      );
+        ev.rencanaTindakLanjut||"-");
     } else {
-      row.push("Belum Evaluasi","","","","","","");
+      vals.push("Belum Evaluasi","-","-","-","-","-","-");
     }
-    rows.push(row);
+    bodyRows += "<tr>" + vals.map(function(v){
+      var isNum = typeof v === "number";
+      return '<td '+(isNum?tdStyleNum:tdStyle)+'>'+xlsEscape(v)+'</td>';
+    }).join("") + "</tr>";
   });
 
-  var csv = rows.map(function(r){ return r.map(csvEscape).join(";"); }).join("\r\n");
-  return csv;
+  var bulanTahun = monthLabel(state.viewDate);
+  var namaInstansi = (state.settings.namaInstansi||"").trim();
+  var judul = (namaInstansi ? xlsEscape(namaInstansi)+" &mdash; " : "") + "Rencana Kerja " + xlsEscape(bulanTahun);
+
+  return '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">'+
+    '<head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>'+
+    '<x:Name>RENJA</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>'+
+    '<body><table style="border-collapse:collapse;">'+
+    '<tr><td colspan="'+cols.length+'" style="font-family:Calibri,Arial;font-size:14px;font-weight:bold;padding:6px;">'+judul+'</td></tr>'+
+    '<tr><td colspan="'+cols.length+'" style="font-family:Calibri,Arial;font-size:11px;color:#555;padding:0 6px 8px;">Bertepatan dengan '+xlsEscape(hijriMonthLabelForGregorian(state.viewDate))+'</td></tr>'+
+    '<tr>'+headerRow1+'</tr><tr>'+headerRow2+'</tr>'+
+    bodyRows+
+    '</table></body></html>';
 }
 document.getElementById("btnCetakRenjaExcel").addEventListener("click", function(){
   var monthKeg = state.kegiatan.filter(function(k){ return inViewMonth(k.tanggal, state.viewDate); });
   if(monthKeg.length===0){ toast("Belum ada kegiatan RENJA di bulan ini"); return; }
-  var csv = generateRenjaCSV();
-  var blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8;'});
-  var filename = 'renja-'+state.viewDate.getFullYear()+'-'+(state.viewDate.getMonth()+1).toString().padStart(2,'0')+'.csv';
+  var html = generateRenjaXlsHtml();
+  var blob = new Blob(['\ufeff', html], {type:'application/vnd.ms-excel'});
+  var filename = 'renja-'+state.viewDate.getFullYear()+'-'+(state.viewDate.getMonth()+1).toString().padStart(2,'0')+'.xls';
   (window.AgendaFiles ? window.AgendaFiles.saveOrShareBlob(filename, blob) : Promise.resolve()).then(function(res){
-    toast(res && res.mode==="saved" ? (res.easy ? 'Tersimpan di folder Download/AgendaKerja' : 'Tersimpan di folder AgendaKerja (buka lewat app Files)') : 'File Excel (CSV) siap disimpan/dibagikan');
+    toast(res && res.mode==="saved" ? (res.easy ? 'Tersimpan di folder Download/AgendaKerja' : 'Tersimpan di folder AgendaKerja (buka lewat app Files)') : 'File Excel siap disimpan/dibagikan');
   });
 });
 
@@ -1720,7 +1820,12 @@ function composeNarrativeLaporan(){
     statusCounts[k.evaluasi.statusPelaksanaan] = (statusCounts[k.evaluasi.statusPelaksanaan]||0)+1;
   });
 
-  var html = "<h1>Laporan Rencana Kerja &mdash; "+escapeHtml(bulanTahun)+"</h1>";
+  var hijriLabel = hijriMonthLabelForGregorian(state.viewDate);
+  var namaInstansi = (state.settings.namaInstansi||"").trim();
+
+  var html = (namaInstansi ? "<p style='text-align:center;font-weight:bold;margin-bottom:0;'>"+escapeHtml(namaInstansi)+"</p>" : "");
+  html += "<h1>Laporan Rencana Kerja &mdash; "+escapeHtml(bulanTahun)+"</h1>";
+  html += "<p style='margin-top:-8px;color:#555;'>Bertepatan dengan "+escapeHtml(hijriLabel)+"</p>";
   html += "<p>Pada bulan "+escapeHtml(bulanTahun)+", tercatat sebanyak "+monthKeg.length+" kegiatan dalam Rencana Kerja (RENJA). Dari jumlah tersebut, "+statusCounts.sesuai+" kegiatan terlaksana sesuai jadwal, "+statusCounts.berubah+" kegiatan mengalami perubahan jadwal, "+statusCounts.batal+" kegiatan tidak terlaksana, dan "+statusCounts.belum+" kegiatan belum memiliki catatan evaluasi.</p>";
   if(withEval.length>0){
     html += "<p>Total anggaran yang diajukan untuk seluruh kegiatan pada bulan ini adalah "+fmtRupiah(totalAjuanEfektif)+(totalTambahan>0?" (termasuk dana tambahan sebesar "+fmtRupiah(totalTambahan)+")":"")+". Realisasi anggaran yang tercatat sebesar "+fmtRupiah(totalRealisasi)+", atau setara "+r.persen.toFixed(1)+"% dari ajuan, sehingga tercatat "+(r.selisih===0?"realisasi sesuai dengan ajuan":"deviasi sebesar "+fmtRupiah(Math.abs(r.selisih))+" ("+(r.selisih<0?"realisasi berada di bawah ajuan":"realisasi melebihi ajuan")+")")+".</p>";
@@ -1736,12 +1841,18 @@ function composeNarrativeLaporan(){
       '</tr>';
     monthKeg.forEach(function(k, idx){
       var d = new Date(k.tanggal+"T00:00:00");
-      var rincian = "<p><b>"+escapeHtml(k.jenisKegiatan)+"</b></p>";
-      rincian += "<p>Tanggal: "+d.getDate()+" "+MONTHS[d.getMonth()]+" "+d.getFullYear()+"</p>";
-      rincian += "<p>Tempat: "+escapeHtml(k.tempat||"-")+"</p>";
-      rincian += "<p>Sasaran: "+escapeHtml(k.sasaran||"-")+"</p>";
-      rincian += "<p>Target Kegiatan: "+escapeHtml(k.targetKegiatan||"-")+"</p>";
-      rincian += "<p>Anggaran Diajukan: "+fmtRupiah(k.totalAnggaranAjuan)+"</p>";
+      var rincian = '<p><b>'+escapeHtml(k.jenisKegiatan)+'</b></p>';
+      function labelRow(label, value){
+        return '<tr><td style="border:none;padding:1px 6px 1px 0;white-space:nowrap;vertical-align:top;"><b>'+label+'</b></td>'+
+          '<td style="border:none;padding:1px 0;vertical-align:top;">: '+value+'</td></tr>';
+      }
+      rincian += '<table style="border:none;border-collapse:collapse;" cellpadding="0" cellspacing="0">'+
+        labelRow("Tanggal", d.getDate()+" "+MONTHS[d.getMonth()]+" "+d.getFullYear()+" ("+hijriDateLabel(d)+")")+
+        labelRow("Tempat", escapeHtml(k.tempat||"-"))+
+        labelRow("Sasaran", escapeHtml(k.sasaran||"-"))+
+        labelRow("Target Kegiatan", escapeHtml(k.targetKegiatan||"-"))+
+        labelRow("Anggaran Diajukan", fmtRupiah(k.totalAnggaranAjuan))+
+        '</table>';
 
       var uraian = "";
       if(k.evaluasi){
@@ -1853,6 +1964,91 @@ load();
 requestAgendaNotificationPermission();
 scheduleAllFutureAgendaNotifications();
 renderAll();
+
+// ================= App Lock (PIN) =================
+function isNativePlatformCheck(){ return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
+function nativeBiometricPlugin(){ return window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.NativeBiometric || null : null; }
+async function sha256Hex(str){
+  var enc = new TextEncoder().encode(str);
+  var buf = await crypto.subtle.digest("SHA-256", enc);
+  return Array.prototype.map.call(new Uint8Array(buf), function(b){ return b.toString(16).padStart(2,"0"); }).join("");
+}
+
+var lockState = { mode: "unlock", step: 1, firstPin: "" };
+
+function showLockOverlay(mode){
+  lockState.mode = mode; lockState.step = 1; lockState.firstPin = "";
+  document.getElementById("lockOverlay").style.display = "flex";
+  document.getElementById("lockPinInput").value = "";
+  document.getElementById("lockError").textContent = "";
+  document.getElementById("btnLockForgot").style.display = mode==="unlock" ? "inline-block" : "none";
+  updateLockTexts();
+  setTimeout(function(){ var i=document.getElementById("lockPinInput"); if(i) i.focus(); }, 150);
+}
+function hideLockOverlay(){ document.getElementById("lockOverlay").style.display = "none"; }
+function updateLockTexts(){
+  var title = document.getElementById("lockTitle"), sub = document.getElementById("lockSubtitle");
+  if(lockState.mode==="unlock"){ title.textContent = "Masukkan PIN"; sub.textContent = "Agenda Kerja terkunci"; }
+  else if(lockState.mode==="create" && lockState.step===1){ title.textContent = "Buat PIN Baru"; sub.textContent = "Masukkan 6 digit PIN"; }
+  else { title.textContent = "Konfirmasi PIN"; sub.textContent = "Masukkan ulang PIN yang sama"; }
+}
+document.getElementById("lockPinInput").addEventListener("input", function(){
+  var v = this.value.replace(/\D/g,"").slice(0,6);
+  this.value = v;
+  if(v.length===6) handlePinComplete(v);
+});
+async function handlePinComplete(pin){
+  var input = document.getElementById("lockPinInput");
+  if(lockState.mode==="unlock"){
+    var h = await sha256Hex(pin);
+    if(h === state.settings.pinHash){ hideLockOverlay(); }
+    else{ document.getElementById("lockError").textContent = "PIN salah, coba lagi"; input.value=""; }
+  } else if(lockState.mode==="create"){
+    if(lockState.step===1){
+      lockState.firstPin = pin; lockState.step = 2; input.value=""; updateLockTexts();
+    } else {
+      if(pin === lockState.firstPin){
+        state.settings.pinHash = await sha256Hex(pin);
+        state.settings.pinEnabled = true;
+        save(); toast("PIN berhasil disimpan"); hideLockOverlay(); renderAturLockToggle();
+      } else {
+        document.getElementById("lockError").textContent = "PIN tidak sama, ulangi dari awal";
+        lockState.step = 1; lockState.firstPin = ""; input.value=""; updateLockTexts();
+      }
+    }
+  }
+}
+document.getElementById("btnLockForgot").addEventListener("click", async function(){
+  var nb = nativeBiometricPlugin();
+  if(!nb){ toast("Fitur ini cuma tersedia di aplikasi Android"); return; }
+  try{
+    var avail = await nb.isAvailable({ useFallback: true });
+    if(!avail || !avail.isAvailable){ toast("Kunci layar HP belum diatur di HP ini"); return; }
+    await nb.verifyIdentity({ reason:"Verifikasi untuk membuat PIN baru", title:"Verifikasi Kunci HP", useFallback:true, fallbackTitle:"Gunakan PIN/Pola/Sidik Jari HP" });
+    toast("Verifikasi berhasil, buat PIN baru");
+    showLockOverlay("create");
+  }catch(e){ toast("Verifikasi dibatalkan atau gagal"); }
+});
+document.getElementById("toggleKunciAplikasi").addEventListener("click", function(e){
+  var btn = e.target.closest("button"); if(!btn) return;
+  if(btn.dataset.val==="ya"){
+    if(!state.settings.pinHash){ showLockOverlay("create"); }
+    else{ state.settings.pinEnabled = true; save(); renderAturLockToggle(); toast("Kunci aplikasi diaktifkan"); }
+  } else {
+    state.settings.pinEnabled = false; save(); renderAturLockToggle(); toast("Kunci aplikasi dinonaktifkan");
+  }
+});
+document.getElementById("btnUbahPin").addEventListener("click", function(){ showLockOverlay("create"); });
+function renderAturLockToggle(){
+  var wrap = document.getElementById("toggleKunciAplikasi");
+  if(!wrap) return;
+  wrap.querySelectorAll("button").forEach(function(b){ b.classList.toggle("active", b.dataset.val === (state.settings.pinEnabled ? "ya":"tidak")); });
+  var btnUbah = document.getElementById("btnUbahPin");
+  if(btnUbah) btnUbah.style.display = state.settings.pinEnabled ? "block" : "none";
+}
+if(isNativePlatformCheck() && state.settings.pinEnabled && state.settings.pinHash){
+  showLockOverlay("unlock");
+}
 
 if("serviceWorker" in navigator){
   window.addEventListener("load", function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); });
