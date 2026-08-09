@@ -41,7 +41,7 @@
   .app{width:100%;max-width:480px;min-height:100vh;background:var(--cover);position:relative;padding-bottom:calc(78px + env(safe-area-inset-bottom,0px));}
 
   /* ---------- Header ---------- */
-  .cover{padding:22px 20px 16px;color:var(--paper);position:relative;}
+  .cover{padding:calc(22px + env(safe-area-inset-top,0px)) 20px 16px;color:var(--paper);position:relative;}
   .cover-top{display:flex;justify-content:space-between;align-items:flex-start;}
   .cover-eyebrow{font-family:"Courier New",ui-monospace,monospace;letter-spacing:.2em;font-size:10.5px;color:var(--accent-light);text-transform:uppercase;margin:0 0 5px;}
   .cover-title{font-size:23px;margin:0;font-weight:700;}
@@ -1810,6 +1810,8 @@ document.getElementById("fileImport").addEventListener("change", function(e){
 
 // ================= INIT =================
 load();
+requestAgendaNotificationPermission();
+scheduleAllFutureAgendaNotifications();
 renderAll();
 
 if("serviceWorker" in navigator){
