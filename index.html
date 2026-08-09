@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Agenda Kerja — Rencana &amp; Evaluasi Kegiatan</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1B2838">
@@ -38,7 +38,7 @@
   button,input,textarea{font-family:inherit;}
   .mono{font-family:"Courier New",ui-monospace,monospace;}
 
-  .app{width:100%;max-width:480px;min-height:100vh;background:var(--cover);position:relative;padding-bottom:78px;}
+  .app{width:100%;max-width:480px;min-height:100vh;background:var(--cover);position:relative;padding-bottom:calc(78px + env(safe-area-inset-bottom,0px));}
 
   /* ---------- Header ---------- */
   .cover{padding:22px 20px 16px;color:var(--paper);position:relative;}
@@ -115,11 +115,11 @@
   .btn-small.flex1{flex:1;}
 
   /* ---------- FAB & bottom nav ---------- */
-  .fab{position:fixed;bottom:78px;left:50%;transform:translateX(-50%);width:100%;max-width:480px;display:flex;justify-content:flex-end;padding-right:16px;pointer-events:none;z-index:20;}
+  .fab{position:fixed;bottom:calc(78px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);width:100%;max-width:480px;display:flex;justify-content:flex-end;padding-right:16px;pointer-events:none;z-index:20;}
   .fab button{pointer-events:auto;background:var(--accent);color:#fff;border:none;width:56px;height:56px;border-radius:50%;font-size:26px;font-weight:700;box-shadow:0 8px 20px rgba(0,0,0,0.35);cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;}
   .fab button:active{transform:scale(0.94);}
 
-  .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--cover-dark);display:flex;z-index:25;border-top:1px solid rgba(255,255,255,0.08);}
+  .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--cover-dark);display:flex;z-index:25;border-top:1px solid rgba(255,255,255,0.08);padding-bottom:env(safe-area-inset-bottom,0px);}
   .bottom-nav button{flex:1;background:none;border:none;color:#8A95A0;padding:10px 4px 8px;font-size:10px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;font-family:inherit;}
   .bottom-nav button .ic{font-size:17px;}
   .bottom-nav button.active{color:var(--accent-light);}
