@@ -360,6 +360,10 @@
       </div>
       <button class="btn btn-primary" id="btnSaveTarifMamin" style="width:100%;margin-bottom:20px;">Simpan Operasional Mamin</button>
 
+      <div class="section-title">Penyimpanan File</div>
+      <p class="empty-note" style="margin-bottom:8px;">Opsional. Aktifkan sekali biar file Excel/Word/Backup yang diunduh langsung masuk ke folder "AgendaKerja" di Penyimpanan Internal (lebih gampang dicari). Kalau tidak diaktifkan, file tetap tersimpan otomatis di folder khusus app.</p>
+      <button class="btn btn-teal" id="btnAktifkanFolderUtama" style="width:100%;margin-bottom:20px;">Aktifkan Folder Utama</button>
+
       <div class="section-title">Zona Berbahaya</div>
       <p class="empty-note" style="margin-bottom:8px;">Menghapus semua kegiatan &amp; pengaturan secara permanen. Sebaiknya unduh backup dulu.</p>
       <button class="btn btn-danger" id="btnResetAll" style="width:100%;">Reset Semua Data</button>
@@ -1152,6 +1156,14 @@ document.getElementById("btnSaveTarifMamin").addEventListener("click", function(
   toast("Operasional mamin disimpan");
 });
 
+document.getElementById("btnAktifkanFolderUtama").addEventListener("click", function(){
+  if(window.AgendaFiles && window.AgendaFiles.openAllFilesAccessSettings){
+    window.AgendaFiles.openAllFilesAccessSettings();
+  } else {
+    toast("Fitur ini cuma tersedia di aplikasi Android");
+  }
+});
+
 document.getElementById("btnResetAll").addEventListener("click", function(){
   showConfirm("Yakin ingin menghapus SEMUA data kegiatan & pengaturan dari perangkat ini? Tindakan ini tidak bisa dibatalkan.", "Lanjut").then(function(ok1){
     if(!ok1) return;
@@ -1697,8 +1709,8 @@ document.getElementById("btnCetakRenjaExcel").addEventListener("click", function
   var csv = generateRenjaCSV();
   var blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8;'});
   var filename = 'renja-'+state.viewDate.getFullYear()+'-'+(state.viewDate.getMonth()+1).toString().padStart(2,'0')+'.csv';
-  (window.AgendaFiles ? window.AgendaFiles.saveOrShareBlob(filename, blob) : Promise.resolve()).then(function(){
-    toast('File Excel (CSV) siap disimpan/dibagikan');
+  (window.AgendaFiles ? window.AgendaFiles.saveOrShareBlob(filename, blob) : Promise.resolve()).then(function(res){
+    toast(res && res.mode==="saved" ? (res.easy ? 'Tersimpan di Internal storage/AgendaKerja' : 'Tersimpan di folder AgendaKerja (buka lewat app Files)') : 'File Excel (CSV) siap disimpan/dibagikan');
   });
 });
 
@@ -1728,26 +1740,46 @@ function composeNarrativeLaporan(){
 
   if(monthKeg.length>0){
     html += "<h2>Rincian Kegiatan</h2>";
+    html += '<table style="width:100%;border-collapse:collapse;" border="1" cellpadding="6" cellspacing="0">';
+    html += '<tr style="background:#eee;font-weight:bold;">'+
+      '<td style="width:5%;vertical-align:top;">No</td>'+
+      '<td style="width:32%;vertical-align:top;">Rincian Kegiatan</td>'+
+      '<td style="width:63%;vertical-align:top;">Uraian Kegiatan</td>'+
+      '</tr>';
     monthKeg.forEach(function(k, idx){
       var d = new Date(k.tanggal+"T00:00:00");
-      html += "<h3>"+(idx+1)+". "+escapeHtml(k.jenisKegiatan)+" &mdash; "+d.getDate()+" "+MONTHS[d.getMonth()]+" "+d.getFullYear()+"</h3>";
-      html += "<p>Kegiatan ini dilaksanakan di "+escapeHtml(k.tempat||"-")+" dengan sasaran "+escapeHtml(k.sasaran||"-")+" dan target kegiatan berupa "+escapeHtml(k.targetKegiatan||"-")+". Anggaran yang diajukan untuk kegiatan ini sebesar "+fmtRupiah(k.totalAnggaranAjuan)+".</p>";
+      var rincian = "<p><b>"+escapeHtml(k.jenisKegiatan)+"</b></p>";
+      rincian += "<p>Tanggal: "+d.getDate()+" "+MONTHS[d.getMonth()]+" "+d.getFullYear()+"</p>";
+      rincian += "<p>Tempat: "+escapeHtml(k.tempat||"-")+"</p>";
+      rincian += "<p>Sasaran: "+escapeHtml(k.sasaran||"-")+"</p>";
+      rincian += "<p>Target Kegiatan: "+escapeHtml(k.targetKegiatan||"-")+"</p>";
+      rincian += "<p>Anggaran Diajukan: "+fmtRupiah(k.totalAnggaranAjuan)+"</p>";
+
+      var uraian = "";
       if(k.evaluasi){
         var ev = k.evaluasi;
-        var statusText = ev.statusPelaksanaan==="sesuai" ? "terlaksana sesuai jadwal" : (ev.statusPelaksanaan==="berubah" ? "terlaksana dengan perubahan jadwal" : "tidak terlaksana");
-        html += "<p>Kegiatan ini "+statusText+", dihadiri oleh "+(ev.pesertaHadir||0)+" peserta"+(k.targetPeserta?" dari target "+k.targetPeserta+" peserta":"")+". Capaian target kegiatan tergolong "+escapeHtml(ev.capaianTarget||"-")+".</p>";
-        if(ev.indikatorKeberhasilan) html += "<p>Indikator keberhasilan: "+escapeHtml(ev.indikatorKeberhasilan)+"</p>";
-        if(ev.kendala) html += "<p>Kendala yang dihadapi: "+escapeHtml(ev.kendala)+"</p>";
-        if(ev.uraianEvaluasi) html += "<p>"+escapeHtml(ev.uraianEvaluasi)+"</p>";
+        var statusText = ev.statusPelaksanaan==="sesuai" ? "Terlaksana sesuai jadwal" : (ev.statusPelaksanaan==="berubah" ? "Terlaksana dengan perubahan jadwal" : "Tidak terlaksana");
+        uraian += "<p>"+statusText+", dihadiri oleh "+(ev.pesertaHadir||0)+" peserta"+(k.targetPeserta?" dari target "+k.targetPeserta+" peserta":"")+".</p>";
+        uraian += "<p>Capaian target kegiatan: "+escapeHtml(ev.capaianTarget||"-")+".</p>";
+        if(ev.indikatorKeberhasilan) uraian += "<p>Indikator keberhasilan: "+escapeHtml(ev.indikatorKeberhasilan)+"</p>";
+        if(ev.kendala) uraian += "<p>Kendala yang dihadapi: "+escapeHtml(ev.kendala)+"</p>";
+        if(ev.uraianEvaluasi) uraian += "<p>"+escapeHtml(ev.uraianEvaluasi)+"</p>";
         var realisasiKeg = ev.realisasiAnggaran||0;
         var ajuanEfektifKeg = (k.totalAnggaranAjuan||0)+(ev.danaTambahan||0);
         var rk = hitungDeviasi(ajuanEfektifKeg, realisasiKeg);
-        html += "<p>Realisasi anggaran kegiatan ini sebesar "+fmtRupiah(realisasiKeg)+" dari ajuan "+fmtRupiah(ajuanEfektifKeg)+" ("+(rk.selisih===0?"sesuai ajuan":"deviasi "+fmtRupiah(Math.abs(rk.selisih))+", "+(rk.selisih<0?"di bawah ajuan":"melebihi ajuan"))+").</p>";
-        if(ev.rencanaTindakLanjut) html += "<p>Rencana tindak lanjut: "+escapeHtml(ev.rencanaTindakLanjut)+"</p>";
+        uraian += "<p>Realisasi anggaran: "+fmtRupiah(realisasiKeg)+" dari ajuan "+fmtRupiah(ajuanEfektifKeg)+" ("+(rk.selisih===0?"sesuai ajuan":"deviasi "+fmtRupiah(Math.abs(rk.selisih))+", "+(rk.selisih<0?"di bawah ajuan":"melebihi ajuan"))+").</p>";
+        if(ev.rencanaTindakLanjut) uraian += "<p>Rencana tindak lanjut: "+escapeHtml(ev.rencanaTindakLanjut)+"</p>";
       } else {
-        html += "<p><em>Kegiatan ini belum memiliki catatan evaluasi.</em></p>";
+        uraian += "<p><em>Kegiatan ini belum memiliki catatan evaluasi.</em></p>";
       }
+
+      html += '<tr>'+
+        '<td style="vertical-align:top;">'+(idx+1)+'</td>'+
+        '<td style="vertical-align:top;">'+rincian+'</td>'+
+        '<td style="vertical-align:top;">'+uraian+'</td>'+
+        '</tr>';
     });
+    html += '</table>';
   }
 
   var monthIns = state.insidentil.filter(function(it){ return inViewMonth(it.tanggal, state.viewDate); })
@@ -1755,12 +1787,31 @@ function composeNarrativeLaporan(){
   if(monthIns.length>0){
     html += "<h2>Kegiatan Insidentil</h2>";
     html += "<p>Selain kegiatan terencana, tercatat "+monthIns.length+" kegiatan di luar rencana (insidentil) pada bulan ini dengan total biaya "+fmtRupiah(monthIns.reduce(function(s,it){ return s+(it.totalBiaya||0); },0))+".</p>";
+    html += '<table style="width:100%;border-collapse:collapse;" border="1" cellpadding="6" cellspacing="0">';
+    html += '<tr style="background:#eee;font-weight:bold;">'+
+      '<td style="width:5%;vertical-align:top;">No</td>'+
+      '<td style="width:32%;vertical-align:top;">Rincian Kejadian</td>'+
+      '<td style="width:63%;vertical-align:top;">Uraian Kejadian</td>'+
+      '</tr>';
     monthIns.forEach(function(it, idx){
       var d = new Date(it.tanggal+"T00:00:00");
-      html += "<h3>"+(idx+1)+". "+escapeHtml(it.jenisKegiatan)+" &mdash; "+d.getDate()+" "+MONTHS[d.getMonth()]+" "+d.getFullYear()+"</h3>";
-      html += "<p>"+escapeHtml(it.uraian||"-")+" Kegiatan ini melibatkan "+(it.totalOrang||0)+" orang dengan biaya "+fmtRupiah(it.totalBiaya)+".</p>";
-      if(it.rencanaTindakLanjut) html += "<p>Hasil/tindak lanjut: "+escapeHtml(it.rencanaTindakLanjut)+"</p>";
+      var rincian = "<p><b>"+escapeHtml(it.jenisKegiatan)+"</b></p>";
+      rincian += "<p>Tanggal: "+d.getDate()+" "+MONTHS[d.getMonth()]+" "+d.getFullYear()+"</p>";
+      rincian += "<p>Tempat: "+escapeHtml(it.tempat||"-")+"</p>";
+      rincian += "<p>Sasaran: "+escapeHtml(it.sasaran||"-")+"</p>";
+      rincian += "<p>Total Orang Terlibat: "+(it.totalOrang||0)+"</p>";
+      rincian += "<p>Total Biaya: "+fmtRupiah(it.totalBiaya)+"</p>";
+
+      var uraian = "<p>"+escapeHtml(it.uraian||"-")+"</p>";
+      if(it.rencanaTindakLanjut) uraian += "<p>Hasil/tindak lanjut: "+escapeHtml(it.rencanaTindakLanjut)+"</p>";
+
+      html += '<tr>'+
+        '<td style="vertical-align:top;">'+(idx+1)+'</td>'+
+        '<td style="vertical-align:top;">'+rincian+'</td>'+
+        '<td style="vertical-align:top;">'+uraian+'</td>'+
+        '</tr>';
     });
+    html += '</table>';
   }
 
   return html;
@@ -1775,8 +1826,8 @@ document.getElementById("btnCetakLaporan").addEventListener("click", function(){
     '</head><body>'+bodyHtml+'</body></html>';
   var blob = new Blob(['\ufeff', fullHtml], {type:'application/msword'});
   var filename = 'laporan-renja-'+state.viewDate.getFullYear()+'-'+(state.viewDate.getMonth()+1).toString().padStart(2,'0')+'.doc';
-  (window.AgendaFiles ? window.AgendaFiles.saveOrShareBlob(filename, blob) : Promise.resolve()).then(function(){
-    toast('Laporan Word siap disimpan/dibagikan');
+  (window.AgendaFiles ? window.AgendaFiles.saveOrShareBlob(filename, blob) : Promise.resolve()).then(function(res){
+    toast(res && res.mode==="saved" ? (res.easy ? 'Tersimpan di Internal storage/AgendaKerja' : 'Tersimpan di folder AgendaKerja (buka lewat app Files)') : 'Laporan Word siap disimpan/dibagikan');
   });
 });
 
@@ -1784,8 +1835,8 @@ document.getElementById("btnCetakLaporan").addEventListener("click", function(){
 document.getElementById("btnExport").addEventListener("click", function(){
   var blob = new Blob([JSON.stringify({kegiatan:state.kegiatan, insidentil:state.insidentil, settings:state.settings}, null, 2)], {type:"application/json"});
   var filename = "backup-agendakerja-"+todayISO()+".json";
-  (window.AgendaFiles ? window.AgendaFiles.saveOrShareBlob(filename, blob) : Promise.resolve()).then(function(){
-    toast("Backup siap disimpan/dibagikan");
+  (window.AgendaFiles ? window.AgendaFiles.saveOrShareBlob(filename, blob) : Promise.resolve()).then(function(res){
+    toast(res && res.mode==="saved" ? (res.easy ? "Backup tersimpan di Internal storage/AgendaKerja" : "Backup tersimpan di folder AgendaKerja") : "Backup siap disimpan/dibagikan");
   });
 });
 document.getElementById("btnImport").addEventListener("click", function(){ document.getElementById("fileImport").click(); });
