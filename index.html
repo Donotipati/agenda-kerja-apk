@@ -360,10 +360,6 @@
       </div>
       <button class="btn btn-primary" id="btnSaveTarifMamin" style="width:100%;margin-bottom:20px;">Simpan Operasional Mamin</button>
 
-      <div class="section-title">Penyimpanan File</div>
-      <p class="empty-note" style="margin-bottom:8px;">Opsional. Aktifkan sekali biar file Excel/Word/Backup yang diunduh langsung masuk ke folder "AgendaKerja" di Penyimpanan Internal (lebih gampang dicari). Kalau tidak diaktifkan, file tetap tersimpan otomatis di folder khusus app.</p>
-      <button class="btn btn-teal" id="btnAktifkanFolderUtama" style="width:100%;margin-bottom:20px;">Aktifkan Folder Utama</button>
-
       <div class="section-title">Zona Berbahaya</div>
       <p class="empty-note" style="margin-bottom:8px;">Menghapus semua kegiatan &amp; pengaturan secara permanen. Sebaiknya unduh backup dulu.</p>
       <button class="btn btn-danger" id="btnResetAll" style="width:100%;">Reset Semua Data</button>
@@ -1156,14 +1152,6 @@ document.getElementById("btnSaveTarifMamin").addEventListener("click", function(
   toast("Operasional mamin disimpan");
 });
 
-document.getElementById("btnAktifkanFolderUtama").addEventListener("click", function(){
-  if(window.AgendaFiles && window.AgendaFiles.openAllFilesAccessSettings){
-    window.AgendaFiles.openAllFilesAccessSettings();
-  } else {
-    toast("Fitur ini cuma tersedia di aplikasi Android");
-  }
-});
-
 document.getElementById("btnResetAll").addEventListener("click", function(){
   showConfirm("Yakin ingin menghapus SEMUA data kegiatan & pengaturan dari perangkat ini? Tindakan ini tidak bisa dibatalkan.", "Lanjut").then(function(ok1){
     if(!ok1) return;
@@ -1710,7 +1698,7 @@ document.getElementById("btnCetakRenjaExcel").addEventListener("click", function
   var blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8;'});
   var filename = 'renja-'+state.viewDate.getFullYear()+'-'+(state.viewDate.getMonth()+1).toString().padStart(2,'0')+'.csv';
   (window.AgendaFiles ? window.AgendaFiles.saveOrShareBlob(filename, blob) : Promise.resolve()).then(function(res){
-    toast(res && res.mode==="saved" ? (res.easy ? 'Tersimpan di Internal storage/AgendaKerja' : 'Tersimpan di folder AgendaKerja (buka lewat app Files)') : 'File Excel (CSV) siap disimpan/dibagikan');
+    toast(res && res.mode==="saved" ? (res.easy ? 'Tersimpan di folder Download/AgendaKerja' : 'Tersimpan di folder AgendaKerja (buka lewat app Files)') : 'File Excel (CSV) siap disimpan/dibagikan');
   });
 });
 
@@ -1827,7 +1815,7 @@ document.getElementById("btnCetakLaporan").addEventListener("click", function(){
   var blob = new Blob(['\ufeff', fullHtml], {type:'application/msword'});
   var filename = 'laporan-renja-'+state.viewDate.getFullYear()+'-'+(state.viewDate.getMonth()+1).toString().padStart(2,'0')+'.doc';
   (window.AgendaFiles ? window.AgendaFiles.saveOrShareBlob(filename, blob) : Promise.resolve()).then(function(res){
-    toast(res && res.mode==="saved" ? (res.easy ? 'Tersimpan di Internal storage/AgendaKerja' : 'Tersimpan di folder AgendaKerja (buka lewat app Files)') : 'Laporan Word siap disimpan/dibagikan');
+    toast(res && res.mode==="saved" ? (res.easy ? 'Tersimpan di folder Download/AgendaKerja' : 'Tersimpan di folder AgendaKerja (buka lewat app Files)') : 'Laporan Word siap disimpan/dibagikan');
   });
 });
 
@@ -1836,7 +1824,7 @@ document.getElementById("btnExport").addEventListener("click", function(){
   var blob = new Blob([JSON.stringify({kegiatan:state.kegiatan, insidentil:state.insidentil, settings:state.settings}, null, 2)], {type:"application/json"});
   var filename = "backup-agendakerja-"+todayISO()+".json";
   (window.AgendaFiles ? window.AgendaFiles.saveOrShareBlob(filename, blob) : Promise.resolve()).then(function(res){
-    toast(res && res.mode==="saved" ? (res.easy ? "Backup tersimpan di Internal storage/AgendaKerja" : "Backup tersimpan di folder AgendaKerja") : "Backup siap disimpan/dibagikan");
+    toast(res && res.mode==="saved" ? (res.easy ? "Backup tersimpan di folder Download/AgendaKerja" : "Backup tersimpan di folder AgendaKerja") : "Backup siap disimpan/dibagikan");
   });
 });
 document.getElementById("btnImport").addEventListener("click", function(){ document.getElementById("fileImport").click(); });

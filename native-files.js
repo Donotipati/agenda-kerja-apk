@@ -1,12 +1,11 @@
 (function () {
-  function fsPlugin(){return window.Capacitor&&window.Capacitor.Plugins?window.Capacitor.Plugins.Filesystem||null:null;}
+  function mediaStorePlugin(){return window.Capacitor&&window.Capacitor.Plugins?window.Capacitor.Plugins.MediaStoreSaver||null:null;}
   function sharePlugin(){return window.Capacitor&&window.Capacitor.Plugins?window.Capacitor.Plugins.Share||null:null;}
+  function fsPlugin(){return window.Capacitor&&window.Capacitor.Plugins?window.Capacitor.Plugins.Filesystem||null:null;}
   function isNative(){return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());}
 
-  var FOLDER = "AgendaKerja";
-  var PACKAGE_ID = "id.agendakerja.app";
-  var EASY_LOCATION = "Internal storage/" + FOLDER;
-  var FALLBACK_LOCATION = "Internal storage/Android/data/" + PACKAGE_ID + "/files/" + FOLDER;
+  var EASY_LOCATION = "Internal storage/Download/AgendaKerja";
+  var FALLBACK_LOCATION = "Internal storage/Android/data/id.agendakerja.app/files/AgendaKerja";
 
   function blobToBase64(blob){
     return new Promise(function(resolve,reject){
@@ -29,61 +28,49 @@
     setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
   }
 
-  // Buka halaman setelan khusus Android "Izinkan akses ke semua file" buat app ini.
-  // Ini SATU-SATUNYA cara ngasih izin ini (gak ada pop-up otomatis, kebijakan keamanan Android).
-  function openAllFilesAccessSettings(){
-    try{
-      var intentUrl = "intent://" + PACKAGE_ID + "#Intent;scheme=package;action=android.settings.MANAGE_APP_ALL_FILES_ACCESS_PERMISSION;end";
-      window.location.href = intentUrl;
-      return true;
-    }catch(e){ return false; }
+  async function offerShare(uri, filename){
+    var sh = sharePlugin();
+    if(!sh || !uri) return;
+    try{ await sh.share({ title: filename, url: uri, dialogTitle: "Bagikan file (opsional)" }); }
+    catch(e){ /* dibatalkan user, gapapa - file sudah tersimpan */ }
   }
 
-  async function tryWrite(fs, filename, base64, directory){
-    var relPath = FOLDER + "/" + filename;
-    return fs.writeFile({ path: relPath, data: base64, directory: directory, recursive: true });
-  }
-
-  // Simpan blob ke folder "AgendaKerja". Coba dulu di folder utama Penyimpanan Internal
-  // (butuh izin "Akses semua file" yang diaktifkan manual lewat openAllFilesAccessSettings());
-  // kalau belum diizinkan, otomatis fallback ke folder khusus app (selalu berhasil, tanpa izin tambahan).
+  // Simpan blob ke folder Download/AgendaKerja lewat MediaStore (cara resmi Android,
+  // gak butuh izin apapun di Android 10+). Kalau plugin native belum ke-build / gagal,
+  // fallback otomatis ke folder khusus app biar tetap ada yang tersimpan.
   async function saveOrShareBlob(filename, blob, opts){
     opts = opts || {};
-    if(!isNative() || !fsPlugin()){
+    if(!isNative()){
       browserDownload(filename, blob);
       return { ok:true, mode:"browser" };
     }
-    var fs = fsPlugin();
-    var base64 = await blobToBase64(blob);
-    var written = null, location = FALLBACK_LOCATION, easy = false;
 
-    try{
-      written = await tryWrite(fs, filename, base64, "EXTERNAL_STORAGE");
-      location = EASY_LOCATION; easy = true;
-    }catch(e){
+    var base64 = await blobToBase64(blob);
+    var mst = mediaStorePlugin();
+    if(mst){
       try{
-        written = await tryWrite(fs, filename, base64, "EXTERNAL");
-        location = FALLBACK_LOCATION; easy = false;
+        var res = await mst.saveToDownloads({ filename: filename, mimeType: blob.type || "application/octet-stream", data: base64 });
+        if(opts.offerShare !== false) await offerShare(res && res.uri, filename);
+        return { ok:true, mode:"saved", easy:true, location: EASY_LOCATION };
+      }catch(e){ /* lanjut ke fallback di bawah */ }
+    }
+
+    var fs = fsPlugin();
+    if(fs){
+      try{
+        var relPath = "AgendaKerja/" + filename;
+        var written = await fs.writeFile({ path: relPath, data: base64, directory: "EXTERNAL", recursive: true });
+        if(opts.offerShare !== false) await offerShare(written && written.uri, filename);
+        return { ok:true, mode:"saved", easy:false, location: FALLBACK_LOCATION };
       }catch(e2){
         try{ browserDownload(filename, blob); }catch(e3){}
         return { ok:false, error:(e2 && e2.message) || String(e2) };
       }
     }
 
-    if(opts.offerShare !== false){
-      var sh = sharePlugin();
-      if(sh && written && written.uri){
-        try{ await sh.share({ title: filename, url: written.uri, dialogTitle: "Bagikan file (opsional)" }); }
-        catch(e){ /* dibatalkan user, gapapa - file sudah tersimpan */ }
-      }
-    }
-    return { ok:true, mode:"saved", easy: easy, location: location };
+    browserDownload(filename, blob);
+    return { ok:true, mode:"browser" };
   }
 
-  window.AgendaFiles = {
-    saveOrShareBlob: saveOrShareBlob,
-    openAllFilesAccessSettings: openAllFilesAccessSettings,
-    EASY_LOCATION: EASY_LOCATION,
-    FALLBACK_LOCATION: FALLBACK_LOCATION
-  };
+  window.AgendaFiles = { saveOrShareBlob: saveOrShareBlob, EASY_LOCATION: EASY_LOCATION, FALLBACK_LOCATION: FALLBACK_LOCATION };
 })();
