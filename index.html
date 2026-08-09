@@ -258,7 +258,6 @@
 </style>
     <script src="native-notifications.js"></script>
     <script src="native-files.js"></script>
-    <script src="ai-service.js"></script>
 </head>
 <body>
 <div class="app">
@@ -345,15 +344,6 @@
 
       <div class="section-title">Kegiatan Insidentil Bulan Ini</div>
       <div class="info-card" id="laporanInsidentilCard"></div>
-
-      <div class="section-title">Analisis &amp; Rangkuman Bulanan</div>
-      <div class="info-card" id="aiLaporanCard">
-        <p style="margin:0 0 8px;color:var(--ink-soft);">
-          Buat rangkuman evaluasi bulan ini. Mode offline tetap tersedia; koneksi AI dapat ditambahkan melalui backend tanpa menaruh API key di APK.
-        </p>
-        <button class="btn btn-teal" id="btnAIRangkuman" style="width:100%;">✨ Buat Rangkuman</button>
-        <div id="aiLaporanResult" style="margin-top:12px;"></div>
-      </div>
 
       <div class="section-title">Cetak Laporan</div>
       <button class="btn btn-primary" id="btnCetakLaporan" style="width:100%;">📄 Cetak Laporan Naratif (Word)</button>
@@ -613,17 +603,17 @@
   <div class="sheet">
     <div class="sheet-handle"></div>
     <h2 id="insidentilFormTitle">Kegiatan Insidentil</h2>
-    <p class="sub">Kejadian di luar rencana, dicatat setelah berlangsung.</p>
+    <p class="sub">Kegiatan yang dilaksanakan di luar Rencana Kerja (RENJA), dicatat setelah berlangsung.</p>
 
     <div class="field"><label>Tanggal</label><input type="date" id="iTanggal"></div>
     <div class="field"><label>Jam</label><input type="time" id="iJam"></div>
-    <div class="field"><label>Tempat</label><input type="text" id="iTempat" placeholder="Lokasi kejadian"></div>
-    <div class="field"><label>Jenis Kegiatan</label><input type="text" id="iJenis" placeholder="mis. Mediasi Mendadak"></div>
-    <div class="field"><label>Uraian Kejadian</label><textarea id="iUraian" placeholder="Apa yang terjadi, kenapa perlu ditangani..."></textarea></div>
-    <div class="field"><label>Sasaran</label><input type="text" id="iSasaran" placeholder="Siapa yang terlibat"></div>
+    <div class="field"><label>Tempat</label><input type="text" id="iTempat" placeholder="Lokasi kegiatan"></div>
+    <div class="field"><label>Jenis Kegiatan</label><input type="text" id="iJenis" placeholder="mis. Kunjungan Kerja"></div>
+    <div class="field"><label>Uraian Kejadian</label><textarea id="iUraian" placeholder="Uraian singkat kegiatan yang dilaksanakan..."></textarea></div>
+    <div class="field"><label>Sasaran</label><input type="text" id="iSasaran" placeholder="Pihak yang terlibat"></div>
     <div class="field"><label>Total Orang Terlibat</label><input type="text" inputmode="numeric" id="iTotalOrang" placeholder="0"></div>
     <div class="field amount-prefix"><label>Total Biaya</label><span>Rp</span><input type="text" inputmode="numeric" id="iTotalBiaya" placeholder="0"></div>
-    <div class="field"><label>Hasil / Rencana Tindak Lanjut</label><textarea id="iRtl" placeholder="Hasil penanganan dan langkah selanjutnya (opsional)..."></textarea></div>
+    <div class="field"><label>Hasil / Rencana Tindak Lanjut</label><textarea id="iRtl" placeholder="Hasil kegiatan dan langkah selanjutnya (opsional)..."></textarea></div>
     <button class="btn btn-teal" id="btnJadikanKegiatanInsidentil" style="width:100%;margin-bottom:6px;">Jadikan Kegiatan RENJA</button>
 
     <div class="btn-row" style="margin-top:10px;">
@@ -1001,22 +991,63 @@ function renderRenjaAnggaranCard(){
   var card = document.getElementById("renjaAnggaranCard");
   if(!card) return;
   if(globalR==null){
-    card.innerHTML =
-      '<div class="row2"><div><p style="color:var(--ink-soft);">Anggaran Diajukan</p><p class="big" style="font-size:17px;">'+fmtRupiah(totalAjuan)+'</p></div>'+
-      '<div><p style="color:var(--ink-soft);">Dana Tambahan</p><p class="big" style="font-size:17px;">'+fmtRupiah(totalTambahan)+'</p></div></div>'+
-      '<p class="empty-note" style="margin-top:6px;">Realisasi global belum diisi.</p>';
+    card.innerHTML = '<div class="row2"><div><p style="color:var(--ink-soft);">Total Ajuan</p><p class="big" style="font-size:17px;">'+fmtRupiah(totalAjuan)+'</p></div></div>'+
+      (totalTambahan>0 ? '<p class="empty-note" style="margin-top:4px;">+ Dana Tambahan (terpisah): '+fmtRupiah(totalTambahan)+'</p>' : '')+
+      '<p class="empty-note" style="margin-top:6px;">Realisasi global belum diisi. Isi setelah putusan/persetujuan anggaran keluar.</p>';
     return;
   }
   var r = hitungDeviasi(totalAjuan, globalR);
   card.innerHTML =
-    '<div class="row2"><div><p style="color:var(--ink-soft);">Anggaran Diajukan</p><p class="big" style="font-size:16px;">'+fmtRupiah(totalAjuan)+'</p></div>'+
+    '<div class="row2"><div><p style="color:var(--ink-soft);">Ajuan</p><p class="big" style="font-size:16px;">'+fmtRupiah(totalAjuan)+'</p></div>'+
     '<div><p style="color:var(--ink-soft);">Realisasi Global ('+r.persen.toFixed(1)+'%)</p><p class="big" style="font-size:16px;">'+fmtRupiah(globalR)+'</p></div></div>'+
-    '<div class="row2" style="margin-top:8px;"><div><p style="color:var(--ink-soft);">Dana Tambahan</p><p class="big" style="font-size:15px;">'+fmtRupiah(totalTambahan)+'</p></div>'+
-    '<div><p style="color:var(--ink-soft);">Realisasi</p><p class="big" style="font-size:15px;">'+fmtRupiah(globalR)+'</p></div></div>'+
-    '<p style="margin-top:8px;color:'+(r.selisih===0?"var(--success)":"var(--danger)")+';font-weight:700;">'+(r.selisih===0?"Realisasi sesuai anggaran diajukan":"Deviasi "+(r.selisih>0?"+":"-")+fmtRupiah(Math.abs(r.selisih)))+'</p>'+
-    '<p style="margin:4px 0 0;color:var(--ink-soft);font-size:12px;">Persentase dan deviasi dihitung dari Anggaran Diajukan. Dana Tambahan dicatat terpisah sebagai realisasi tambahan.</p>';
+    '<p style="margin-top:8px;color:'+(r.selisih===0?"var(--success)":"var(--danger)")+';font-weight:700;">'+(r.selisih===0?"Sesuai Ajuan":"Deviasi "+(r.selisih>0?"+":"-")+fmtRupiah(Math.abs(r.selisih)))+'</p>'+
+    (totalTambahan>0 ? '<p class="empty-note" style="margin-top:4px;">Dana Tambahan (di luar ajuan &amp; realisasi di atas): '+fmtRupiah(totalTambahan)+'</p>' : '');
 }
 
+document.getElementById("btnIsiRealisasiGlobal").addEventListener("click", function(){
+  var monthKeg = state.kegiatan.filter(function(k){ return inViewMonth(k.tanggal, state.viewDate); });
+  var totalAjuan = monthKeg.reduce(function(s,k){ return s+(k.totalAnggaranAjuan||0); }, 0);
+  document.getElementById("realisasiGlobalAjuanInfo").innerHTML =
+    '<p style="color:var(--ink-soft);">Total Ajuan Bulan Ini</p><p class="big" style="font-size:17px;">'+fmtRupiah(totalAjuan)+'</p>';
+  var existing = state.realisasiGlobal[ymKeyOf(state.viewDate)];
+  setNumberInputValue(document.getElementById("gRealisasiInput"), existing||0);
+  document.getElementById("realisasiGlobalBackdrop").classList.add("open");
+});
+document.getElementById("btnRealisasiGlobalCancel").addEventListener("click", function(){ document.getElementById("realisasiGlobalBackdrop").classList.remove("open"); });
+document.getElementById("realisasiGlobalBackdrop").addEventListener("click", function(e){ if(e.target===this) this.classList.remove("open"); });
+document.getElementById("btnRealisasiGlobalSave").addEventListener("click", function(){
+  var val = getRawNumber(document.getElementById("gRealisasiInput"));
+  state.realisasiGlobal[ymKeyOf(state.viewDate)] = val;
+  save(); renderAll();
+  document.getElementById("realisasiGlobalBackdrop").classList.remove("open");
+  toast("Realisasi global disimpan");
+});
+formatNumberInput(document.getElementById("gRealisasiInput"));
+
+document.getElementById("btnSalinReguler").addEventListener("click", function(){
+  var prevDate = new Date(state.viewDate.getFullYear(), state.viewDate.getMonth()-1, 1);
+  var regulerLastMonth = state.kegiatan.filter(function(k){ return k.isReguler && inViewMonth(k.tanggal, prevDate); });
+  if(regulerLastMonth.length===0){ toast("Tidak ada kegiatan reguler di bulan lalu"); return; }
+  var added = 0;
+  regulerLastMonth.forEach(function(k){
+    var oldDate = new Date(k.tanggal+"T00:00:00");
+    var newDate = new Date(state.viewDate.getFullYear(), state.viewDate.getMonth(), Math.min(oldDate.getDate(), 28));
+    var newTanggal = newDate.getFullYear()+"-"+(newDate.getMonth()+1).toString().padStart(2,"0")+"-"+newDate.getDate().toString().padStart(2,"0");
+    var copy = JSON.parse(JSON.stringify(k));
+    copy.id = uid();
+    copy.tanggal = newTanggal;
+    copy.sumberKegiatan = "reguler";
+    copy.sumberRefId = k.id;
+    copy.evaluasi = null;
+    copy.createdAt = Date.now();
+    state.kegiatan.push(copy);
+    added++;
+  });
+  save(); renderAll();
+  toast(added+" kegiatan reguler disalin ke bulan ini");
+});
+
+// ================= INSIDENTIL TAB =================
 function renderInsidentil(){
   var el = document.getElementById("insidentilListArea");
   var sorted = state.insidentil.slice().sort(function(a,b){ return b.tanggal.localeCompare(a.tanggal) || b.createdAt-a.createdAt; });
@@ -1038,213 +1069,91 @@ function renderInsidentil(){
   });
 }
 
-// ================= AI RANGKUMAN BULANAN =================
-function getAIMonthKey(){
-  return ymKeyOf(state.viewDate);
-}
-
-function buildAISafePayload(){
-  var monthKey = getAIMonthKey();
-  var monthLabelText = monthLabel(state.viewDate);
-  var renja = state.kegiatan.filter(function(k){ return inViewMonth(k.tanggal, state.viewDate); })
-    .sort(function(a,b){ return (a.tanggal||"").localeCompare(b.tanggal||""); });
-
-  var insidentil = state.insidentil.filter(function(k){ return inViewMonth(k.tanggal, state.viewDate); })
-    .sort(function(a,b){ return (a.tanggal||"").localeCompare(b.tanggal||""); });
-
-  function safeKegiatan(k){
-    var ev = k.evaluasi || null;
-    return {
-      tanggal: k.tanggal || "",
-      jenisKegiatan: k.jenisKegiatan || "",
-      targetKegiatan: k.targetKegiatan || "",
-      sasaran: k.sasaran || "",
-      sumberKegiatan: k.sumberKegiatan || "",
-      namaRangkaian: k.namaRangkaian || "",
-      evaluasi: ev ? {
-        statusPelaksanaan: ev.statusPelaksanaan || "",
-        pesertaHadir: Number(ev.pesertaHadir || 0),
-        capaianTarget: ev.capaianTarget || "",
-        indikatorKeberhasilan: ev.indikatorKeberhasilan || "",
-        kendala: ev.kendala || "",
-        uraianEvaluasi: ev.uraianEvaluasi || "",
-        rencanaTindakLanjut: ev.rencanaTindakLanjut || ""
-      } : null
-    };
-  }
-
-  return {
-    schema: "agenda-kerja-ai-v1",
-    periode: monthKey,
-    labelPeriode: monthLabelText,
-    kegiatan: renja.map(safeKegiatan),
-    insidentil: insidentil.map(function(k){
-      return {
-        tanggal: k.tanggal || "",
-        jenisKegiatan: k.jenisKegiatan || k.namaKegiatan || "",
-        uraian: k.uraian || k.keterangan || "",
-        hasil: k.hasil || "",
-        kendala: k.kendala || ""
-      };
-    })
-  };
-}
-
-function buildLocalAISummary(payload){
-  var kegiatan = payload.kegiatan || [];
-  var insidentil = payload.insidentil || [];
-  var counts = {sesuai:0, berubah:0, batal:0, belum:0};
-  var evaluated = 0;
-  var peserta = 0;
-  var kendala = [];
-  var rtl = [];
-  var capaian = [];
-
-  kegiatan.forEach(function(k){
-    if(!k.evaluasi){ counts.belum++; return; }
-    evaluated++;
-    counts[k.evaluasi.statusPelaksanaan] = (counts[k.evaluasi.statusPelaksanaan] || 0) + 1;
-    peserta += Number(k.evaluasi.pesertaHadir || 0);
-    if(k.evaluasi.kendala) kendala.push(k.evaluasi.kendala.trim());
-    if(k.evaluasi.rencanaTindakLanjut) rtl.push(k.evaluasi.rencanaTindakLanjut.trim());
-    if(k.evaluasi.capaianTarget) capaian.push(k.evaluasi.capaianTarget.trim());
-  });
-
-  var terlaksana = counts.sesuai + counts.berubah;
-  var persen = kegiatan.length ? Math.round((terlaksana / kegiatan.length) * 100) : 0;
-
-  function uniqueNonEmpty(arr){
-    var seen = {};
-    return arr.filter(function(x){
-      var key = x.toLowerCase();
-      if(!x || seen[key]) return false;
-      seen[key] = true;
-      return true;
-    }).slice(0,5);
-  }
-
-  var lines = [];
-  lines.push("<h3 style='margin:0 0 8px;'>Rangkuman "+escapeHtml(payload.labelPeriode)+"</h3>");
-  lines.push("<p style='margin:4px 0;'>Terdapat <b>"+kegiatan.length+"</b> kegiatan RENJA. Sebanyak <b>"+terlaksana+"</b> kegiatan terlaksana ("+persen+"%), dengan "+counts.sesuai+" sesuai jadwal dan "+counts.berubah+" mengalami perubahan jadwal.</p>");
-  lines.push("<p style='margin:4px 0;'>"+counts.batal+" kegiatan tidak terlaksana dan "+counts.belum+" kegiatan belum dievaluasi. Total peserta hadir yang tercatat: <b>"+peserta+"</b>.</p>");
-
-  var kendalaU = uniqueNonEmpty(kendala);
-  if(kendalaU.length){
-    lines.push("<p style='margin:10px 0 4px;'><b>Kendala yang tercatat</b></p><ul style='margin:4px 0 8px;padding-left:20px;'>"+
-      kendalaU.map(function(x){ return "<li>"+escapeHtml(x)+"</li>"; }).join("")+"</ul>");
-  }
-
-  var rtlU = uniqueNonEmpty(rtl);
-  if(rtlU.length){
-    lines.push("<p style='margin:10px 0 4px;'><b>Tindak lanjut</b></p><ul style='margin:4px 0 8px;padding-left:20px;'>"+
-      rtlU.map(function(x){ return "<li>"+escapeHtml(x)+"</li>"; }).join("")+"</ul>");
-  }
-
-  if(insidentil.length){
-    lines.push("<p style='margin:10px 0 0;'><b>Kegiatan insidentil:</b> "+insidentil.length+" kejadian tercatat.</p>");
-  }
-
-  return {
-    html: lines.join(""),
-    plainText: lines.join("").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim(),
-    source: "local",
-    generatedAt: new Date().toISOString()
-  };
-}
-
-function renderAIRangkuman(result){
-  var el = document.getElementById("aiLaporanResult");
-  if(!el) return;
-  if(!result){
-    el.innerHTML = "";
-    return;
-  }
-  var badge = result.source === "ai"
-    ? "<span class='tag sesuai' style='margin-left:6px;'>AI</span>"
-    : "<span class='tag' style='margin-left:6px;'>Offline</span>";
-  el.innerHTML = "<div style='border-top:1px solid var(--line);padding-top:10px;'>"+result.html+badge+"</div>";
-}
-
-async function generateAIRangkuman(){
-  var btn = document.getElementById("btnAIRangkuman");
-  if(!btn) return;
-  var original = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = "⏳ Menganalisis...";
-
-  try{
-    var payload = buildAISafePayload();
-    var localResult = buildLocalAISummary(payload);
-    var result = localResult;
-
-    if(window.AgendaAI && typeof window.AgendaAI.requestSummary === "function"){
-      try{
-        var remote = await window.AgendaAI.requestSummary(payload);
-        if(remote && remote.html) result = Object.assign({}, remote, {source:"ai"});
-      }catch(e){
-        console.warn("AI backend tidak tersedia, memakai rangkuman offline.", e);
-      }
-    }
-
-    localStorage.setItem("agendakerja_ai_report_"+getAIMonthKey(), JSON.stringify(result));
-    renderAIRangkuman(result);
-    toast(result.source === "ai" ? "Rangkuman AI selesai" : "Rangkuman offline selesai");
-  }catch(e){
-    console.error(e);
-    toast("Gagal membuat rangkuman");
-  }finally{
-    btn.disabled = false;
-    btn.textContent = original;
-  }
-}
-
-function loadSavedAIRangkuman(){
-  var el = document.getElementById("aiLaporanResult");
-  if(!el) return;
-  try{
-    var raw = localStorage.getItem("agendakerja_ai_report_"+getAIMonthKey());
-    if(raw) renderAIRangkuman(JSON.parse(raw));
-    else renderAIRangkuman(null);
-  }catch(e){ renderAIRangkuman(null); }
-}
-
 // ================= LAPORAN TAB =================
 function renderLaporan(){
   var monthKeg = state.kegiatan.filter(function(k){ return inViewMonth(k.tanggal, state.viewDate); });
   var totalAjuan = monthKeg.reduce(function(s,k){ return s+(k.totalAnggaranAjuan||0); }, 0);
   var withEval = monthKeg.filter(function(k){ return k.evaluasi; });
   var totalTambahan = withEval.reduce(function(s,k){ return s+(k.evaluasi.danaTambahan||0); }, 0);
+  var totalAjuanEfektif = totalAjuan + totalTambahan;
   var totalRealisasi = withEval.reduce(function(s,k){ return s+(k.evaluasi.realisasiAnggaran||0); }, 0);
-  var r = hitungDeviasi(totalAjuan, totalRealisasi);
+  var r = hitungDeviasi(totalAjuanEfektif, totalRealisasi);
   document.getElementById("laporanAnggaranCard").innerHTML =
-    '<div class="row2"><div><p style="color:var(--ink-soft);">Anggaran Diajukan</p><p class="big" style="font-size:17px;">'+fmtRupiah(totalAjuan)+'</p></div>'+
-    '<div><p style="color:var(--ink-soft);">Realisasi ('+r.persen.toFixed(1)+'%)</p><p class="big" style="font-size:17px;">'+fmtRupiah(totalRealisasi)+'</p></div></div>'+
-    '<div class="row2" style="margin-top:8px;"><div><p style="color:var(--ink-soft);">Dana Tambahan</p><p class="big" style="font-size:15px;">'+fmtRupiah(totalTambahan)+'</p></div>'+
-    '<div><p style="color:var(--ink-soft);">Realisasi</p><p class="big" style="font-size:15px;">'+fmtRupiah(totalRealisasi)+'</p></div></div>'+
-    '<p style="margin-top:8px;font-weight:700;color:'+(r.selisih===0?"var(--success)":"var(--danger)")+';">'+(r.selisih===0?"Realisasi sesuai anggaran diajukan":"Deviasi "+(r.selisih>0?"+":"-")+fmtRupiah(Math.abs(r.selisih)))+'</p>'+
-    '<p style="margin:4px 0 0;color:var(--ink-soft);font-size:12px;">Dana Tambahan dicatat sebagai realisasi tambahan dan tidak masuk perhitungan persentase anggaran diajukan.</p>';
+    '<div class="row2"><div><p style="color:var(--ink-soft);">Total Ajuan'+(totalTambahan>0?" + Tambahan":"")+'</p><p class="big" style="font-size:17px;">'+fmtRupiah(totalAjuanEfektif)+'</p></div>'+
+    '<div><p style="color:var(--ink-soft);">Total Realisasi ('+r.persen.toFixed(1)+'%)</p><p class="big" style="font-size:17px;">'+fmtRupiah(totalRealisasi)+'</p></div></div>'+
+    '<p style="margin-top:8px;font-weight:700;color:'+(r.selisih===0?"var(--success)":"var(--danger)")+';">'+(r.selisih===0?"Sesuai Ajuan":"Deviasi "+(r.selisih>0?"+":"-")+fmtRupiah(Math.abs(r.selisih)))+'</p>';
+
   var statusCounts = {sesuai:0, berubah:0, batal:0, belum:0};
-  monthKeg.forEach(function(k){ if(!k.evaluasi){ statusCounts.belum++; return; } statusCounts[k.evaluasi.statusPelaksanaan] = (statusCounts[k.evaluasi.statusPelaksanaan]||0)+1; });
+  monthKeg.forEach(function(k){
+    if(!k.evaluasi){ statusCounts.belum++; return; }
+    statusCounts[k.evaluasi.statusPelaksanaan] = (statusCounts[k.evaluasi.statusPelaksanaan]||0)+1;
+  });
   document.getElementById("laporanStatusCard").innerHTML =
     '<div style="display:flex;justify-content:space-between;padding:4px 0;"><span>Sesuai Jadwal</span><b style="color:var(--success);">'+statusCounts.sesuai+'</b></div>'+
     '<div style="display:flex;justify-content:space-between;padding:4px 0;"><span>Jadwal Berubah</span><b style="color:var(--warn);">'+statusCounts.berubah+'</b></div>'+
     '<div style="display:flex;justify-content:space-between;padding:4px 0;"><span>Tidak Terlaksana</span><b style="color:var(--danger);">'+statusCounts.batal+'</b></div>'+
     '<div style="display:flex;justify-content:space-between;padding:4px 0;"><span>Belum Evaluasi</span><b style="color:var(--ink-soft);">'+statusCounts.belum+'</b></div>';
+
   var sumberCounts = {baru:0, reguler:0, tindak_lanjut:0};
   monthKeg.forEach(function(k){ sumberCounts[k.sumberKegiatan||"baru"] = (sumberCounts[k.sumberKegiatan||"baru"]||0)+1; });
   document.getElementById("laporanSumberCard").innerHTML =
     '<div style="display:flex;justify-content:space-between;padding:4px 0;"><span>Baru</span><b>'+sumberCounts.baru+'</b></div>'+
     '<div style="display:flex;justify-content:space-between;padding:4px 0;"><span>Reguler</span><b>'+sumberCounts.reguler+'</b></div>'+
     '<div style="display:flex;justify-content:space-between;padding:4px 0;"><span>Tindak Lanjut</span><b>'+sumberCounts.tindak_lanjut+'</b></div>';
+
   var monthInsidentil = state.insidentil.filter(function(it){ return inViewMonth(it.tanggal, state.viewDate); });
   var totalBiayaInsidentil = monthInsidentil.reduce(function(s,it){ return s+(it.totalBiaya||0); }, 0);
   document.getElementById("laporanInsidentilCard").innerHTML =
     '<div class="row2"><div><p style="color:var(--ink-soft);">Jumlah Kejadian</p><p class="big" style="font-size:17px;">'+monthInsidentil.length+'</p></div>'+
     '<div><p style="color:var(--ink-soft);">Total Biaya</p><p class="big" style="font-size:17px;">'+fmtRupiah(totalBiayaInsidentil)+'</p></div></div>';
+
   renderLaporanRangkaian(monthKeg);
-  loadSavedAIRangkuman();
 }
 
+function renderLaporanRangkaian(monthKeg){
+  var el = document.getElementById("laporanRangkaianArea");
+  if(!el) return;
+  var groups = {};
+  monthKeg.forEach(function(k){
+    if(!k.namaRangkaian) return;
+    var key = k.namaRangkaian.trim().toLowerCase();
+    if(!groups[key]) groups[key] = { nama:k.namaRangkaian, items:[] };
+    groups[key].items.push(k);
+  });
+  var keys = Object.keys(groups);
+  if(keys.length===0){
+    el.innerHTML = '<p class="empty-note">Belum ada kegiatan yang ditandai satu Nama Rangkaian bulan ini.</p>';
+    return;
+  }
+  el.innerHTML = "";
+  keys.forEach(function(key){
+    var g = groups[key];
+    var items = g.items.slice().sort(function(a,b){ return a.tanggal.localeCompare(b.tanggal); });
+    var totalAjuan = items.reduce(function(s,k){ return s+(k.totalAnggaranAjuan||0); }, 0);
+    var withEval = items.filter(function(k){ return k.evaluasi; });
+    var totalTambahan = withEval.reduce(function(s,k){ return s+(k.evaluasi.danaTambahan||0); }, 0);
+    var totalRealisasi = withEval.reduce(function(s,k){ return s+(k.evaluasi.realisasiAnggaran||0); }, 0);
+    var tglAwal = new Date(items[0].tanggal+"T00:00:00");
+    var tglAkhir = new Date(items[items.length-1].tanggal+"T00:00:00");
+    var rentang = items.length>1 ? (tglAwal.getDate()+" "+MONTHS[tglAwal.getMonth()].slice(0,3)+" – "+tglAkhir.getDate()+" "+MONTHS[tglAkhir.getMonth()].slice(0,3)) : (tglAwal.getDate()+" "+MONTHS[tglAwal.getMonth()].slice(0,3));
+    var card = document.createElement("div");
+    card.className = "info-card";
+    var html = '<h3>🔗 '+escapeHtml(g.nama)+'</h3><p>'+items.length+' sesi · '+rentang+'</p>';
+    html += '<div class="row2" style="margin-top:8px;"><div><p style="color:var(--ink-soft);">Total Ajuan</p><p class="big" style="font-size:15px;">'+fmtRupiah(totalAjuan)+'</p></div>';
+    if(withEval.length>0){
+      html += '<div><p style="color:var(--ink-soft);">Total Realisasi</p><p class="big" style="font-size:15px;">'+fmtRupiah(totalRealisasi)+'</p></div>';
+    }
+    html += '</div>';
+    if(totalTambahan>0) html += '<p class="empty-note" style="margin-top:4px;">Dana Tambahan (terpisah): '+fmtRupiah(totalTambahan)+'</p>';
+    card.innerHTML = html;
+    el.appendChild(card);
+  });
+}
+
+// ================= ATUR TAB =================
+formatNumberInput(document.getElementById("setTarifMaminPendek"));
+formatNumberInput(document.getElementById("setTarifMaminPanjang"));
+function isPesertaName(nama){ return String(nama||"").trim().toLowerCase()==="peserta"; }
 function activeKategoriPelaksana(){
   return state.settings.kategoriPelaksana.filter(function(c){ return !isPesertaName(c.nama); });
 }
@@ -1594,16 +1503,168 @@ function updateAnggaranSelisih(){
   var r = hitungDeviasi(ajuan, realisasi);
   var box = document.getElementById("eAnggaranSelisihBox");
   var html = '<div class="line"><span>Anggaran Diajukan</span><b>'+fmtRupiah(ajuan)+'</b></div>';
-  html += '<div class="line"><span>Realisasi</span><b>'+fmtRupiah(realisasi)+'</b></div>';
+  html += '<div class="line"><span>Realisasi Anggaran</span><b>'+fmtRupiah(realisasi)+'</b></div>';
   html += '<div class="line"><span>Persentase Realisasi</span><b>'+r.persen.toFixed(1)+'%</b></div>';
-  if(tambahan>0){
-    html += '<div class="line"><span>Dana Tambahan</span><b>'+fmtRupiah(tambahan)+'</b></div>';
-    html += '<div class="line"><span>Realisasi Tambahan</span><b>'+fmtRupiah(tambahan)+'</b></div>';
-  }
   html += '<div class="line total" style="color:'+(r.selisih===0?"var(--success)":"var(--danger)")+';"><span>'+(r.selisih===0?"Sesuai Ajuan":"Deviasi")+'</span><span>'+(r.selisih>0?"+":r.selisih<0?"-":"")+fmtRupiah(Math.abs(r.selisih))+'</span></div>';
+  if(tambahan>0){
+    html += '<div class="line" style="margin-top:6px;border-top:1px dashed var(--paper-line);padding-top:6px;"><span>Dana Tambahan <em>(anggaran terpisah, di luar ajuan &amp; tidak memengaruhi persentase/deviasi di atas)</em></span><b>'+fmtRupiah(tambahan)+'</b></div>';
+  }
   box.innerHTML = html;
 }
+eRealisasiInput.addEventListener("input", updateAnggaranSelisih);
+eDanaTambahanInput.addEventListener("input", updateAnggaranSelisih);
 
+function openEvaluasiForm(k){
+  currentEvaluasiKegiatan = k;
+  document.getElementById("evaluasiKegiatanInfo").textContent = k.jenisKegiatan + " · " + k.tanggal;
+  var ev = k.evaluasi || {};
+  state.currentStatusPelaksanaan = ev.statusPelaksanaan || "sesuai";
+  document.querySelectorAll("#toggleStatusPelaksanaan button").forEach(function(b){ b.classList.toggle("active", b.dataset.val===state.currentStatusPelaksanaan); });
+  document.getElementById("jadwalAktualArea").style.display = (state.currentStatusPelaksanaan==="berubah") ? "block" : "none";
+  document.getElementById("eTanggalAktual").value = ev.tanggalAktual || k.tanggal;
+  document.getElementById("eJamAktual").value = ev.jamAktual || k.jam || "";
+
+  ePesertaInput.value = ev.pesertaHadir || "";
+  updatePesertaSelisih();
+
+  state.currentCapaianTarget = ev.capaianTarget || "tercapai";
+  document.querySelectorAll("#toggleCapaianTarget button").forEach(function(b){ b.classList.toggle("active", b.dataset.val===state.currentCapaianTarget); });
+
+  document.getElementById("eIndikator").value = ev.indikatorKeberhasilan || "";
+  document.getElementById("eKendala").value = ev.kendala || "";
+  document.getElementById("eUraian").value = ev.uraianEvaluasi || "";
+  setNumberInputValue(eDanaTambahanInput, ev.danaTambahan || 0);
+
+  // Realisasi otomatis ke-isi berdasarkan persentase Realisasi Global bulan itu (proporsional dari ajuan
+  // kegiatan ini), kalau global belum diisi fallback ke nilai ajuan penuh. Kalau sudah pernah dievaluasi
+  // manual sebelumnya, nilai manual itu yang dipakai (gak ketimpa ulang).
+  var realisasiAwal;
+  if(k.evaluasi && k.evaluasi.realisasiAnggaran){
+    realisasiAwal = ev.realisasiAnggaran;
+  } else {
+    var kegDate = new Date(k.tanggal+"T00:00:00");
+    var globalR = state.realisasiGlobal[ymKeyOf(kegDate)];
+    if(globalR!=null){
+      var totalAjuanBulanKeg = state.kegiatan.filter(function(x){ return inViewMonth(x.tanggal, kegDate); }).reduce(function(s,x){ return s+(x.totalAnggaranAjuan||0); }, 0);
+      var persenGlobal = totalAjuanBulanKeg>0 ? (globalR/totalAjuanBulanKeg) : 0;
+      realisasiAwal = Math.round((k.totalAnggaranAjuan||0) * persenGlobal);
+    } else {
+      realisasiAwal = k.totalAnggaranAjuan||0;
+    }
+  }
+  setNumberInputValue(eRealisasiInput, realisasiAwal);
+  updateAnggaranSelisih();
+  document.getElementById("eRtl").value = ev.rencanaTindakLanjut || "";
+
+  evaluasiFormBackdrop.classList.add("open");
+}
+document.getElementById("btnEvaluasiCancel").addEventListener("click", function(){ evaluasiFormBackdrop.classList.remove("open"); });
+evaluasiFormBackdrop.addEventListener("click", function(e){ if(e.target===this) this.classList.remove("open"); });
+
+document.getElementById("btnEvaluasiSave").addEventListener("click", function(){
+  if(!currentEvaluasiKegiatan) return;
+  var evaluasi = {
+    statusPelaksanaan: state.currentStatusPelaksanaan,
+    tanggalAktual: state.currentStatusPelaksanaan==="berubah" ? document.getElementById("eTanggalAktual").value : "",
+    jamAktual: state.currentStatusPelaksanaan==="berubah" ? document.getElementById("eJamAktual").value : "",
+    pesertaHadir: parseInt(ePesertaInput.value,10)||0,
+    capaianTarget: state.currentCapaianTarget,
+    indikatorKeberhasilan: document.getElementById("eIndikator").value.trim(),
+    kendala: document.getElementById("eKendala").value.trim(),
+    uraianEvaluasi: document.getElementById("eUraian").value.trim(),
+    realisasiAnggaran: getRawNumber(eRealisasiInput),
+    danaTambahan: getRawNumber(eDanaTambahanInput),
+    rencanaTindakLanjut: document.getElementById("eRtl").value.trim()
+  };
+  var idx = state.kegiatan.findIndex(function(k){ return k.id===currentEvaluasiKegiatan.id; });
+  if(idx>-1){
+    state.kegiatan[idx].evaluasi = evaluasi;
+    save(); renderAll();
+    toast("Evaluasi disimpan");
+  }
+  evaluasiFormBackdrop.classList.remove("open");
+});
+
+document.getElementById("btnJadikanKegiatanRenja").addEventListener("click", function(){
+  var rtl = document.getElementById("eRtl").value.trim();
+  if(!rtl){ toast("Isi Rencana Tindak Lanjut dulu"); return; }
+  state.pendingJadikanKegiatanSource = { type:"renja", id: currentEvaluasiKegiatan.id, rtlText: rtl };
+  openMonthPickerForJadikanKegiatan();
+});
+
+// ================= SHEET: INSIDENTIL =================
+var insidentilFormBackdrop = document.getElementById("insidentilFormBackdrop");
+var iTotalBiayaInput = document.getElementById("iTotalBiaya");
+formatNumberInput(iTotalBiayaInput);
+
+function openInsidentilForm(it){
+  state.editingInsidentilId = it ? it.id : null;
+  document.getElementById("insidentilFormTitle").textContent = it ? "Edit Kegiatan Insidentil" : "Kegiatan Insidentil";
+  document.getElementById("btnInsidentilDelete").style.display = it ? "block" : "none";
+  document.getElementById("iTanggal").value = it ? it.tanggal : todayISO();
+  document.getElementById("iJam").value = it ? (it.jam||"") : "";
+  document.getElementById("iTempat").value = it ? (it.tempat||"") : "";
+  document.getElementById("iJenis").value = it ? (it.jenisKegiatan||"") : "";
+  document.getElementById("iUraian").value = it ? (it.uraian||"") : "";
+  document.getElementById("iSasaran").value = it ? (it.sasaran||"") : "";
+  document.getElementById("iTotalOrang").value = it ? (it.totalOrang||"") : "";
+  setNumberInputValue(iTotalBiayaInput, it ? (it.totalBiaya||0) : 0);
+  document.getElementById("iRtl").value = it ? (it.rencanaTindakLanjut||"") : "";
+  insidentilFormBackdrop.classList.add("open");
+}
+document.getElementById("btnInsidentilCancel").addEventListener("click", function(){ insidentilFormBackdrop.classList.remove("open"); });
+insidentilFormBackdrop.addEventListener("click", function(e){ if(e.target===this) this.classList.remove("open"); });
+
+document.getElementById("btnInsidentilSave").addEventListener("click", function(){
+  var tanggal = document.getElementById("iTanggal").value;
+  var jenis = document.getElementById("iJenis").value.trim();
+  if(!tanggal){ toast("Pilih tanggal dulu"); return; }
+  if(!jenis){ toast("Isi jenis kegiatan dulu"); return; }
+  var record = {
+    tanggal: tanggal, jam: document.getElementById("iJam").value,
+    tempat: document.getElementById("iTempat").value.trim(),
+    jenisKegiatan: jenis, uraian: document.getElementById("iUraian").value.trim(),
+    sasaran: document.getElementById("iSasaran").value.trim(),
+    totalOrang: parseInt(document.getElementById("iTotalOrang").value,10)||0,
+    totalBiaya: getRawNumber(iTotalBiayaInput),
+    rencanaTindakLanjut: document.getElementById("iRtl").value.trim()
+  };
+  if(state.editingInsidentilId){
+    var idx = state.insidentil.findIndex(function(it){ return it.id===state.editingInsidentilId; });
+    if(idx>-1){ record.id=state.insidentil[idx].id; record.createdAt=state.insidentil[idx].createdAt; state.insidentil[idx]=record; }
+    toast("Kegiatan insidentil diperbarui");
+  } else {
+    record.id = uid(); record.createdAt = Date.now();
+    state.insidentil.push(record);
+    toast("Kegiatan insidentil disimpan");
+  }
+  var savedInsidentil = state.insidentil.find(function(x){return x.id===(state.editingInsidentilId||record.id);}) || record;
+  scheduleAgendaNotification(savedInsidentil,"insidentil");
+  save(); renderAll();
+  insidentilFormBackdrop.classList.remove("open");
+});
+document.getElementById("btnInsidentilDelete").addEventListener("click", function(){
+  if(!state.editingInsidentilId) return;
+  showConfirm("Hapus kegiatan insidentil ini?").then(function(ok){
+    if(!ok) return;
+    var deletedInsidentilId=state.editingInsidentilId;
+    if(window.AgendaNotifications) window.AgendaNotifications.cancel("insidentil:"+deletedInsidentilId).catch(function(){});
+    state.insidentil = state.insidentil.filter(function(it){ return it.id!==deletedInsidentilId; });
+    save(); renderAll();
+    insidentilFormBackdrop.classList.remove("open");
+    toast("Kegiatan dihapus");
+  });
+});
+document.getElementById("btnJadikanKegiatanInsidentil").addEventListener("click", function(){
+  var rtl = document.getElementById("iRtl").value.trim();
+  if(!rtl){ toast("Isi Hasil/Rencana Tindak Lanjut dulu"); return; }
+  if(!state.editingInsidentilId){ toast("Simpan kegiatan ini dulu sebelum dijadikan RENJA"); return; }
+  var it = state.insidentil.find(function(x){ return x.id===state.editingInsidentilId; });
+  state.pendingJadikanKegiatanSource = { type:"insidentil", id: it.id, rtlText: rtl, jenisKegiatan: it.jenisKegiatan, sasaran: it.sasaran };
+  openMonthPickerForJadikanKegiatan();
+});
+
+// ================= Jadikan Kegiatan: pilih bulan =================
 function openMonthPickerForJadikanKegiatan(){
   var opts = [];
   var base = new Date();
@@ -1761,12 +1822,12 @@ function composeNarrativeLaporan(){
   var hijriLabel = hijriMonthLabelForGregorian(state.viewDate);
   var namaInstansi = (state.settings.namaInstansi||"").trim();
 
-  var html = (namaInstansi ? "<p style='text-align:center;font-weight:bold;margin-bottom:0;'>"+escapeHtml(namaInstansi)+"</p>" : "");
+  var html = (namaInstansi ? "<table cellpadding=\"6\" cellspacing=\"0\" style=\"margin-bottom:14px;\"><tr><td style=\"border:1.5px solid #333;font-weight:bold;font-size:13px;letter-spacing:0.5px;\">"+escapeHtml(namaInstansi.toUpperCase())+"</td></tr></table>" : "");
   html += "<h1>Laporan Rencana Kerja &mdash; "+escapeHtml(bulanTahun)+"</h1>";
   html += "<p style='margin-top:-8px;color:#555;'>Bertepatan dengan "+escapeHtml(hijriLabel)+"</p>";
   html += "<p>Pada bulan "+escapeHtml(bulanTahun)+", tercatat sebanyak "+monthKeg.length+" kegiatan dalam Rencana Kerja (RENJA). Dari jumlah tersebut, "+statusCounts.sesuai+" kegiatan terlaksana sesuai jadwal, "+statusCounts.berubah+" kegiatan mengalami perubahan jadwal, "+statusCounts.batal+" kegiatan tidak terlaksana, dan "+statusCounts.belum+" kegiatan belum memiliki catatan evaluasi.</p>";
   if(withEval.length>0){
-    html += "<p>Anggaran yang diajukan untuk seluruh kegiatan pada bulan ini sebesar "+fmtRupiah(totalAjuan)+". Realisasi anggaran sebesar "+fmtRupiah(totalRealisasi)+", atau setara "+r.persen.toFixed(1)+"% dari anggaran yang diajukan, sehingga tercatat "+(r.selisih===0?"realisasi sesuai dengan ajuan":"deviasi sebesar "+fmtRupiah(Math.abs(r.selisih))+" ("+(r.selisih<0?"realisasi berada di bawah ajuan":"realisasi melebihi ajuan")+")")+(totalTambahan>0?". Selain itu terdapat dana tambahan sebesar "+fmtRupiah(totalTambahan)+" yang dicatat terpisah sebagai realisasi tambahan":"")+".</p>";
+    html += "<p>Total anggaran yang diajukan untuk seluruh kegiatan pada bulan ini adalah "+fmtRupiah(totalAjuan)+". Realisasi anggaran yang tercatat sebesar "+fmtRupiah(totalRealisasi)+", atau setara "+r.persen.toFixed(1)+"% dari ajuan, sehingga tercatat "+(r.selisih===0?"realisasi sesuai dengan ajuan":"deviasi sebesar "+fmtRupiah(Math.abs(r.selisih))+" ("+(r.selisih<0?"realisasi berada di bawah ajuan":"realisasi melebihi ajuan")+")")+"."+(totalTambahan>0?" Di luar perhitungan ajuan dan realisasi tersebut, terdapat pula dana tambahan sebesar "+fmtRupiah(totalTambahan)+" yang merupakan anggaran terpisah dan tidak memengaruhi persentase maupun deviasi di atas.":"")+"</p>";
   }
 
   if(monthKeg.length>0){
@@ -1780,17 +1841,11 @@ function composeNarrativeLaporan(){
     monthKeg.forEach(function(k, idx){
       var d = new Date(k.tanggal+"T00:00:00");
       var rincian = '<p><b>'+escapeHtml(k.jenisKegiatan)+'</b></p>';
-      function labelRow(label, value){
-        return '<tr><td style="border:none;padding:1px 6px 1px 0;white-space:nowrap;vertical-align:top;"><b>'+label+'</b></td>'+
-          '<td style="border:none;padding:1px 0;vertical-align:top;">: '+value+'</td></tr>';
-      }
-      rincian += '<table style="border:none;border-collapse:collapse;" cellpadding="0" cellspacing="0">'+
-        labelRow("Tanggal", d.getDate()+" "+MONTHS[d.getMonth()]+" "+d.getFullYear()+" ("+hijriDateLabel(d)+")")+
-        labelRow("Tempat", escapeHtml(k.tempat||"-"))+
-        labelRow("Sasaran", escapeHtml(k.sasaran||"-"))+
-        labelRow("Target Kegiatan", escapeHtml(k.targetKegiatan||"-"))+
-        labelRow("Anggaran Diajukan", fmtRupiah(k.totalAnggaranAjuan))+
-        '</table>';
+      rincian += "<p><b>Tanggal</b>&nbsp;&nbsp;&nbsp;: "+d.getDate()+" "+MONTHS[d.getMonth()]+" "+d.getFullYear()+" ("+hijriDateLabel(d)+")</p>";
+      rincian += "<p><b>Tempat</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: "+escapeHtml(k.tempat||"-")+"</p>";
+      rincian += "<p><b>Sasaran</b>&nbsp;&nbsp;&nbsp;&nbsp;: "+escapeHtml(k.sasaran||"-")+"</p>";
+      rincian += "<p><b>Target Kegiatan</b>&nbsp;: "+escapeHtml(k.targetKegiatan||"-")+"</p>";
+      rincian += "<p><b>Anggaran Diajukan</b>&nbsp;: "+fmtRupiah(k.totalAnggaranAjuan)+"</p>";
 
       var uraian = "";
       if(k.evaluasi){
@@ -1802,10 +1857,9 @@ function composeNarrativeLaporan(){
         if(ev.kendala) uraian += "<p>Kendala yang dihadapi: "+escapeHtml(ev.kendala)+"</p>";
         if(ev.uraianEvaluasi) uraian += "<p>"+escapeHtml(ev.uraianEvaluasi)+"</p>";
         var realisasiKeg = ev.realisasiAnggaran||0;
-        var ajuanKeg = (k.totalAnggaranAjuan||0);
-        var rk = hitungDeviasi(ajuanKeg, realisasiKeg);
-        uraian += "<p>Realisasi anggaran: "+fmtRupiah(realisasiKeg)+" dari anggaran diajukan "+fmtRupiah(ajuanKeg)+" ("+rk.persen.toFixed(1)+"%, "+(rk.selisih===0?"sesuai ajuan":"deviasi "+fmtRupiah(Math.abs(rk.selisih))+", "+(rk.selisih<0?"di bawah ajuan":"melebihi ajuan"))+").</p>";
-        if(ev.danaTambahan){ uraian += "<p>Dana tambahan: "+fmtRupiah(ev.danaTambahan)+" (dicatat terpisah sebagai realisasi tambahan).</p>"; }
+        var ajuanEfektifKeg = (k.totalAnggaranAjuan||0)+(ev.danaTambahan||0);
+        var rk = hitungDeviasi(ajuanEfektifKeg, realisasiKeg);
+        uraian += "<p>Realisasi anggaran: "+fmtRupiah(realisasiKeg)+" dari ajuan "+fmtRupiah(ajuanEfektifKeg)+" ("+(rk.selisih===0?"sesuai ajuan":"deviasi "+fmtRupiah(Math.abs(rk.selisih))+", "+(rk.selisih<0?"di bawah ajuan":"melebihi ajuan"))+").</p>";
         if(ev.rencanaTindakLanjut) uraian += "<p>Rencana tindak lanjut: "+escapeHtml(ev.rencanaTindakLanjut)+"</p>";
       } else {
         uraian += "<p><em>Kegiatan ini belum memiliki catatan evaluasi.</em></p>";
@@ -1855,13 +1909,12 @@ function composeNarrativeLaporan(){
   return html;
 }
 
-document.getElementById("btnAIRangkuman").addEventListener("click", generateAIRangkuman);
 document.getElementById("btnCetakLaporan").addEventListener("click", function(){
   var bodyHtml = composeNarrativeLaporan();
   var fullHtml =
     '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'+
     '<head><meta charset="utf-8"><title>Laporan Rencana Kerja</title>'+
-    '<style>@page{size:A4;margin:18mm 16mm 18mm 16mm;}body{font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.35;color:#222;}h1{font-size:16pt;margin:0 0 5px;}h2{font-size:14pt;margin-top:18px;}h3{font-size:12pt;margin-top:14px;margin-bottom:3px;}p{margin:3px 0;text-align:justify;}table{border-collapse:collapse;table-layout:fixed;}td{word-wrap:break-word;vertical-align:top;}</style>'+
+    '<style>body{font-family:Calibri,Arial,sans-serif;font-size:12pt;line-height:1.5;color:#222;} h1{font-size:16pt;} h2{font-size:14pt;margin-top:22px;} h3{font-size:12.5pt;margin-top:16px;margin-bottom:2px;} p{margin:4px 0;text-align:justify;}</style>'+
     '</head><body>'+bodyHtml+'</body></html>';
   var blob = new Blob(['\ufeff', fullHtml], {type:'application/msword'});
   var filename = 'laporan-renja-'+state.viewDate.getFullYear()+'-'+(state.viewDate.getMonth()+1).toString().padStart(2,'0')+'.doc';
